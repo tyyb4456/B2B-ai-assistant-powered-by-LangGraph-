@@ -1,0 +1,90 @@
+2025-11-22 06:35:43 | INFO     | app.core.logging:setup_logging:38 - Logging configured: level=INFO, file=app.log
+2025-11-22 06:35:52 | INFO     | main:lifespan:41 - ----------------------------------------
+2025-11-22 06:35:52 | INFO     | main:lifespan:42 - Starting B2B Textile Procurement API
+2025-11-22 06:35:52 | INFO     | main:lifespan:43 - Version: 1.0.0
+2025-11-22 06:35:52 | INFO     | main:lifespan:44 - Debug mode: False
+2025-11-22 06:35:52 | INFO     | main:lifespan:45 - ----------------------------------------
+2025-11-22 06:35:52 | SUCCESS  | main:lifespan:49 - LangGraph initialized
+2025-11-22 06:35:56 | INFO     | main:log_requests:100 - GET /
+2025-11-22 06:35:56 | INFO     | main:log_requests:102 - GET / - Status: 200
+2025-11-22 06:35:56 | INFO     | main:log_requests:100 - GET /favicon.ico
+2025-11-22 06:35:56 | INFO     | main:log_requests:102 - GET /favicon.ico - Status: 404
+2025-11-22 06:36:01 | INFO     | main:log_requests:100 - GET /docs
+2025-11-22 06:36:01 | INFO     | main:log_requests:102 - GET /docs - Status: 200
+2025-11-22 06:36:02 | INFO     | main:log_requests:100 - GET /openapi.json
+2025-11-22 06:36:02 | INFO     | main:log_requests:102 - GET /openapi.json - Status: 200
+2025-11-22 06:36:13 | INFO     | main:log_requests:100 - POST /api/v1/conversations/stream
+2025-11-22 06:36:13 | INFO     | app.api.v1.endpoints.conversation_endpoints:start_conversation_stream:928 - Starting streaming conversation for user: demo_user
+2025-11-22 06:36:13 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:83 - [SSE] Sending connected event, size: 161
+2025-11-22 06:36:13 | INFO     | main:log_requests:102 - POST /api/v1/conversations/stream - Status: 200
+2025-11-22 06:36:13 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:86 - [SSE] Starting stream for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:36:13 | INFO     | app.services.graph_manager:_ensure_initialized:42 - Initializing checkpoint database: B2B-textile-assistant.db
+2025-11-22 06:36:13 | SUCCESS  | app.services.graph_manager:_ensure_initialized:64 - LangGraph initialized successfully
+2025-11-22 06:36:13 | INFO     | app.services.graph_manager:execute_workflow:89 - Starting workflow execution for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:36:13 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: receive_user_input
+2025-11-22 06:36:13 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 150
+2025-11-22 06:36:13 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 192
+2025-11-22 06:36:13 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 180
+2025-11-22 06:36:15 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: classify_intent
+2025-11-22 06:36:15 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 140
+2025-11-22 06:36:15 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 183
+2025-11-22 06:36:15 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:199 - [SSE] Intent classified: get_quote
+2025-11-22 06:36:18 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: extract_parameters
+2025-11-22 06:36:18 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 122
+2025-11-22 06:36:18 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 303
+2025-11-22 06:36:18 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:210 - [SSE] Parameters extracted
+2025-11-22 06:36:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: search_suppliers_direct_sql
+2025-11-22 06:36:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 131
+2025-11-22 06:36:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 196
+2025-11-22 06:36:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:227 - [SSE] Found 5 suppliers
+2025-11-22 06:36:54 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: generate_quote
+2025-11-22 06:36:54 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 140
+2025-11-22 06:36:54 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 661
+2025-11-22 06:36:54 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:248 - [SSE] Quote generated: QT-20251122-C95A852F
+2025-11-22 06:36:54 | SUCCESS  | app.services.graph_manager:execute_workflow:96 - Workflow completed for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:36:54 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:283 - [SSE] Workflow generator exhausted, fetching final state
+2025-11-22 06:36:54 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:289 - [SSE] Final state - status: quote_generated, paused: False
+2025-11-22 06:36:54 | SUCCESS  | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:306 - [SSE] Stream completed for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:37:37 | INFO     | main:log_requests:100 - POST /api/v1/conversations/demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6/stream/continue
+2025-11-22 06:37:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:continue_conversation_stream:1033 - Continuing streaming conversation: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:37:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:83 - [SSE] Sending connected event, size: 164
+2025-11-22 06:37:37 | INFO     | main:log_requests:102 - POST /api/v1/conversations/demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6/stream/continue - Status: 200
+2025-11-22 06:37:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:86 - [SSE] Starting stream for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:37:37 | INFO     | app.services.graph_manager:continue_workflow:246 - Continuing workflow with updates for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:37:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: receive_user_input
+2025-11-22 06:37:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 150
+2025-11-22 06:37:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 177
+2025-11-22 06:37:37 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 180
+2025-11-22 06:37:38 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: classify_intent
+2025-11-22 06:37:38 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 140
+2025-11-22 06:37:38 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 183
+2025-11-22 06:37:38 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:199 - [SSE] Intent classified: negotiate
+2025-11-22 06:37:40 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: start_negotiation
+2025-11-22 06:37:40 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 121
+2025-11-22 06:37:40 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 299
+2025-11-22 06:37:44 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: draft_negotiation_message
+2025-11-22 06:37:44 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 156
+2025-11-22 06:37:44 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 666
+2025-11-22 06:37:44 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:259 - [SSE] Negotiation message drafted
+2025-11-22 06:38:22 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: validate_and_enhance_message
+2025-11-22 06:38:22 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 166
+2025-11-22 06:38:22 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 684
+2025-11-22 06:38:22 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: __interrupt__
+2025-11-22 06:38:22 | WARNING  | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:137 - [SSE] Node data is not dict: <class 'tuple'>
+2025-11-22 06:38:22 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 117
+2025-11-22 06:38:22 | SUCCESS  | app.services.graph_manager:continue_workflow:258 - Workflow continued successfully for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:38:22 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:283 - [SSE] Workflow generator exhausted, fetching final state
+2025-11-22 06:38:22 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:289 - [SSE] Final state - status: message_enhanced_ready, paused: True
+2025-11-22 06:38:22 | SUCCESS  | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:306 - [SSE] Stream completed for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:39:05 | INFO     | main:log_requests:100 - POST /api/v1/conversations/demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6/stream/resume
+2025-11-22 06:39:05 | INFO     | app.api.v1.endpoints.conversation_endpoints:resume_conversation_stream:974 - Resuming streaming conversation: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:39:05 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:83 - [SSE] Sending connected event, size: 162
+2025-11-22 06:39:05 | INFO     | main:log_requests:102 - POST /api/v1/conversations/demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6/stream/resume - Status: 200
+2025-11-22 06:39:05 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:86 - [SSE] Starting stream for thread: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:39:05 | INFO     | app.services.graph_manager:resume_with_supplier_response:198 - Resuming paused workflow with supplier response: demo_user_f15536d4-9d13-4a0d-bd2f-017268e1d8e6
+2025-11-22 06:39:20 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:133 - [SSE] Processing node: analyze_supplier_response
+2025-11-22 06:39:20 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:152 - [SSE] Sending node_progress event, size: 168
+2025-11-22 06:39:20 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 193
+2025-11-22 06:39:20 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:192 - [SSE] Sending message event, size: 675
+2025-11-22 06:39:20 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:270 - [SSE] Supplier response analyzed
+
