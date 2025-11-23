@@ -109,13 +109,12 @@ export default function NewConversation() {
       (event) => {
         console.log('[Frontend] ✅ Event received:', event);
         
-        // FIX: Store the entire event object as-is
-        const eventType = event.type || 'message';
-
-
-
+        // 🔥 FIX: event.data now contains everything including type
+        const eventType = event.type || event.data?.type || 'message';
+        const eventData = event.data;
+        
         setStreamState(prev => {
-          const newEvents = [...prev.events, event];
+          const newEvents = [...prev.events, { type: eventType, data: eventData }];
           let newNode = prev.currentNode;
           let newThreadId = prev.threadId;
 
@@ -123,37 +122,32 @@ export default function NewConversation() {
           switch (eventType) {
             case 'connected':
               newNode = '✅ Connected';
-              newThreadId = event.thread_id || newThreadId;
+              newThreadId = eventData.thread_id || newThreadId;
               break;
             case 'node_progress':
-              newNode = `⚙️ ${formatNodeName(event.node || 'Processing')}`;
+              newNode = `⚙️ ${formatNodeName(eventData.node || 'Processing')}`;
               break;
             case 'intent_classified':
-              newNode = `🎯 Intent: ${event.intent || 'Unknown'}`;
+              newNode = `🎯 Intent: ${eventData.intent || 'Unknown'}`;
               break;
             case 'parameters_extracted':
               newNode = '📋 Parameters Extracted';
               break;
             case 'suppliers_found':
-              const supplierCount = event.count || (event.suppliers?.length || 0);
-              newNode = `🏢 Found ${supplierCount} Suppliers`;
+              newNode = `🏢 Found ${eventData.count || 0} Suppliers`;
               break;
             case 'quote_generated':
               newNode = '📄 Quote Generated';
               break;
             case 'message':
-              newNode = `💬 ${formatNodeName(event.node || 'Message')}`;
+              newNode = `💬 ${formatNodeName(eventData.node || 'Message')}`;
               break;
             case 'workflow_complete':
               newNode = '✅ Completed';
-              newThreadId = event.thread_id || newThreadId;
+              newThreadId = eventData.thread_id || newThreadId;
               break;
             case 'error':
               newNode = '❌ Error';
-              break;
-            case 'close':
-              newNode = '✅ Stream Closed';
-              newThreadId = event.thread_id || newThreadId;
               break;
           }
 
@@ -178,18 +172,15 @@ export default function NewConversation() {
         }));
         
         setTimeout(() => {
-          setStreamState(prev => ({
-            ...prev,
-            threadId: data.thread_id || prev.threadId
-          }));
+          setStreamState(prev => {
+            const finalThreadId = data.thread_id || prev.threadId;
+            if (finalThreadId) {
+              console.log('[Frontend] 🚀 Navigating to:', finalThreadId);
+              navigate(`/conversation/${finalThreadId}`);
+            }
+            return prev;
+          });
         }, 1500);
-
-        useEffect(() => {
-          if (!streamState.isStreaming && streamState.threadId) {
-            navigate(`/conversation/${streamState.threadId}`);
-          }
-        }, [streamState.isStreaming, streamState.threadId, navigate]);
-
       },
       // onError - no changes needed
       (error) => {
@@ -210,15 +201,15 @@ export default function NewConversation() {
     cleanupRef.current = cleanup;
   };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (cleanupRef.current) {
-        console.log('[Frontend] 🧹 Cleanup');
-        cleanupRef.current();
-      }
-    };
-  }, []);
+  // // Cleanup on unmount
+  // useEffect(() => {
+  //   return () => {
+  //     if (cleanupRef.current) {
+  //       console.log('[Frontend] 🧹 Cleanup');
+  //       cleanupRef.current();
+  //     }
+  //   };
+  // }, []);
 
   // Apply template
   const applyTemplate = (template) => {
@@ -566,57 +557,38 @@ function StreamEventCard({ event, index }) {
           </p>
         )}
         
-        {/* Node Progress Status */}
-        {eventData.status && (
-          <p className="text-xs text-neutral-600 mb-1">
-            <span className="font-semibold">Status:</span> {eventData.status}
+        {eventType === 'intent_classified' && eventData.confidence && (
+          <p className="text-xs text-primary-600 font-medium">
+            Confidence: {(eventData.confidence * 100).toFixed(0)}%
           </p>
-        )}
-        
-        {/* Intent Classification Details */}
-        {eventType === 'intent_classified' && (
-          <div className="mt-2 space-y-1">
-            {eventData.intent && (
-              <p className="text-xs text-primary-600 font-medium">
-                🎯 Intent: {eventData.intent}
-              </p>
-            )}
-            {eventData.confidence && (
-              <p className="text-xs text-primary-600 font-medium">
-                📊 Confidence: {(eventData.confidence * 100).toFixed(0)}%
-              </p>
-            )}
-            {eventData.reasoning && (
-              <p className="text-xs text-neutral-600 italic">
-                {eventData.reasoning}
-              </p>
-            )}
-          </div>
         )}
         
         {eventType === 'parameters_extracted' && eventData.parameters && (
           <div className="mt-2 p-2 bg-neutral-50 rounded border border-neutral-200">
-
-            <p className="text-xs text-neutral-600 font-medium mb-1">📋 Extracted Parameters:</p>
-            <div className="space-y-1">
-              {Object.entries(eventData.parameters).map(([key, value]) => (
-                <div key={key} className="text-xs text-neutral-600">
-                  <span className="font-semibold capitalize">{key.replace(/_/g, ' ')}:</span> {value}
-                </div>
-              ))}
+            <p className="text-xs text-neutral-600 font-medium mb-1">Extracted:</p>
+            <div className="flex flex-wrap gap-2">
+              {eventData.parameters.fabric_type && (
+                <span className="px-2 py-0.5 bg-secondary-100 text-secondary-700 text-xs rounded-full">
+                  {eventData.parameters.fabric_type}
+                </span>
+              )}
+              {eventData.parameters.quantity && (
+                <span className="px-2 py-0.5 bg-secondary-100 text-secondary-700 text-xs rounded-full">
+                  {eventData.parameters.quantity} {eventData.parameters.unit}
+                </span>
+              )}
             </div>
           </div>
         )}
-        {/* Suppliers Found */}
+        
         {eventType === 'suppliers_found' && eventData.suppliers && (
           <div className="mt-2">
-            <p className="text-xs text-neutral-600 mb-1 font-medium">🏢 Suppliers:</p>
-            <div className="space-y-1">
-              {eventData.suppliers.slice(0, 5).map((supplier, idx) => (
-                <div key={idx} className="text-xs text-neutral-600 bg-warning-50 p-1 rounded">
-                  <p><span className="font-semibold">{supplier.name}</span> - {supplier.location}</p>
-                  {supplier.price && <p>Price: {supplier.price}</p>}
-                </div>
+            <p className="text-xs text-neutral-600 mb-1">Top suppliers:</p>
+            <div className="flex flex-wrap gap-1">
+              {eventData.suppliers.slice(0, 3).map((supplier, idx) => (
+                <span key={idx} className="px-2 py-0.5 bg-warning-100 text-warning-700 text-xs rounded-full">
+                  {supplier.name}
+                </span>
               ))}
             </div>
           </div>
@@ -624,7 +596,7 @@ function StreamEventCard({ event, index }) {
         
         {eventData.quote_id && (
           <p className="text-xs text-neutral-500 font-mono mt-1">
-            📄 Quote ID: {eventData.quote_id}
+            Quote: {eventData.quote_id}
           </p>
         )}
         
@@ -633,18 +605,10 @@ function StreamEventCard({ event, index }) {
             💰 Potential Savings: {eventData.estimated_savings}%
           </p>
         )}
-        {/* Error Display */}
-
-        {eventType === 'error' && eventData.error && (
-          <p className="text-sm text-error-600 mt-1 bg-error-50 p-2 rounded">
-            ❌ {eventData.error}
-          </p>
-        )}
         
-        {/* Timestamp */}
-        {eventData.timestamp && (
-          <p className="text-xs text-neutral-400 mt-2">
-            ⏱️ {new Date(eventData.timestamp).toLocaleTimeString()}
+        {eventType === 'error' && eventData.error && (
+          <p className="text-sm text-error-600 mt-1">
+            {eventData.error}
           </p>
         )}
       </div>

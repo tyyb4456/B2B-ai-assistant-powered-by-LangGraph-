@@ -82,6 +82,7 @@ async def stream_workflow_events(
         })
         logger.info(f"[SSE] Sending connected event, size: {len(event_data)}")
         yield event_data.encode('utf-8')  # 🔥 Encode to bytes
+        await asyncio.sleep(0.1)  # 🔥 CRITICAL: Force immediate flush to client
         
         logger.info(f"[SSE] Starting stream for thread: {thread_id}")
         
@@ -119,6 +120,7 @@ async def stream_workflow_events(
                     "error": str(event["error"])
                 })
                 yield event_data.encode('utf-8')
+                await asyncio.sleep(0.1)  # 🔥 Force flush
                 break
             
             # LangGraph format: {"node_name": {...state_updates...}}
@@ -151,6 +153,7 @@ async def stream_workflow_events(
             })
             logger.info(f"[SSE] Sending node_progress event, size: {len(event_data)}")
             yield event_data.encode('utf-8')
+            await asyncio.sleep(0.15)  # 🔥 INCREASED: Force flush between events (150ms for visibility)
             
             # Extract and send messages
             messages = node_data.get("messages")
@@ -191,6 +194,7 @@ async def stream_workflow_events(
                         })
                         logger.info(f"[SSE] Sending message event, size: {len(event_data)}")
                         yield event_data.encode('utf-8')
+                        await asyncio.sleep(0.1)  # 🔥 Force flush
             
             # Send specific events for important nodes
             if node_name == "classify_intent":
@@ -276,8 +280,8 @@ async def stream_workflow_events(
                     })
                     yield event_data.encode('utf-8')
             
-            # Small delay between events
-            await asyncio.sleep(0.01)
+            # Small delay between events - forces buffer flush
+            await asyncio.sleep(0.15)  # 🔥 INCREASED for better visibility
         
         # Get final state and send completion
         logger.info(f"[SSE] Workflow generator exhausted, fetching final state")
@@ -316,19 +320,17 @@ async def stream_workflow_events(
 
 def format_sse_event(event_type: str, data: dict) -> str:
     """
-    Format data as Server-Sent Event - SIMPLIFIED format like old backend
+    Format data as Server-Sent Event with explicit keepalive
     
-    Simple SSE format (like old working backend):
-    data: {"type": "event_type", ...}
-    
-    (blank line to separate events)
+    Format includes comment to trigger buffer flush
     """
-    # 🔥 FIX: Include event type INSIDE the data, not as separate line
+    # 🔥 Include event type INSIDE the data
     data_with_type = {"type": event_type, **data}
     json_data = json.dumps(data_with_type, default=str)
     
-    # 🔥 FIX: Simple format like old backend - just "data: json\n\n"
-    event_str = f"data: {json_data}\n\n"
+    # 🔥 Add a comment line BEFORE the data to force buffer flush
+    # Comments are ignored by SSE parsers but force TCP packet transmission
+    event_str = f": ping\ndata: {json_data}\n\n"
     
     logger.debug(f"[SSE] Formatting event: {event_type}, length: {len(event_str)}")
     
@@ -940,7 +942,7 @@ async def start_conversation_stream(
     if request.recipient_email:
         initial_state["recipient_email"] = request.recipient_email
     
-    # 🔥 Return StreamingResponse directly with the generator
+    # 🔥 Return StreamingResponse with aggressive anti-buffering headers
     return StreamingResponse(
         stream_workflow_events(
             service=service,
@@ -948,12 +950,17 @@ async def start_conversation_stream(
             initial_state=initial_state,
             workflow_type="start"
         ),
-        media_type="text/event-stream",
+        media_type="text/event-stream; charset=utf-8",
         headers={
-            "Cache-Control": "no-cache, no-transform",
+            "Cache-Control": "no-cache, no-store, no-transform, must-revalidate",
             "Connection": "keep-alive",
+            "Content-Encoding": "none",
             "X-Accel-Buffering": "no",
             "Transfer-Encoding": "chunked",
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
         }
     )
 
