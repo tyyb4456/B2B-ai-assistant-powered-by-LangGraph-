@@ -1,96 +1,129 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { useConversationComprehensive, useContinueConversation, useResumeConversation } from '../api/hooks';
-import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
+import { useConversationComprehensive, useConversationMessages, useConversationStatus } from '../api/hooks';
+import * as api from '../api/endpoints';
+import StreamingConversation from '../components/features/StreamingConversation';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { StatusBadge } from '../components/ui/Badge';
-import Spinner from '../components/ui/Spinner';
 import { Textarea } from '../components/ui/Input';
-import {
-  ArrowLeft,
-  Download,
+import { 
+  ArrowLeft, 
+  Send, 
+  Zap, 
   MessageSquare,
-  Calendar,
+  FileText,
   Package,
-  DollarSign,
   Clock,
-  Building2,
-  Award,
-  RefreshCw,
-  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Pause,
+  Play,
 } from 'lucide-react';
-import { formatDateTime, formatCurrency, formatLeadTime, formatNumber, truncate } from '../utils/formatters';
-import { INTENT_CONFIG } from '../utils/constants';
+import { STATUS_CONFIG } from '../utils/constants';
 
 export default function ConversationDetail() {
   const { threadId } = useParams();
   const navigate = useNavigate();
-  
-  // Use COMPREHENSIVE endpoint
-  const { data: conversation, isLoading, error, refetch } = useConversationComprehensive(threadId);
-  const continueConversation = useContinueConversation();
-  const resumeConversation = useResumeConversation();
 
-  const [showContinueForm, setShowContinueForm] = useState(false);
-  const [showResumeForm, setShowResumeForm] = useState(false);
+  // Fetch conversation data
+  const { data: conversation, isLoading, refetch } = useConversationComprehensive(threadId);
+  const { data: messagesData, refetch: refetchMessages } = useConversationMessages(threadId);
+  const { data: statusData } = useConversationStatus(threadId, { 
+    refetchInterval: 5000 // Poll every 5 seconds
+  });
+
+  // Form states
   const [continueInput, setContinueInput] = useState('');
   const [resumeInput, setResumeInput] = useState('');
+  const [activeTab, setActiveTab] = useState('overview'); // overview | continue | resume
 
-  // Handle continue conversation
-  const handleContinue = async () => {
+  // Streaming setup
+  const streaming = StreamingConversation({
+    onComplete: (completedThreadId, events) => {
+      console.log('[ConversationDetail] ✅ Streaming completed', completedThreadId, events.length);
+      
+      // Refetch conversation data
+      refetch();
+      refetchMessages();
+      
+      // Reset forms
+      setContinueInput('');
+      setResumeInput('');
+      
+      // Switch back to overview
+      setTimeout(() => {
+        setActiveTab('overview');
+      }, 2000);
+    },
+    onError: (error) => {
+      console.error('[ConversationDetail] ❌ Streaming error:', error);
+    },
+    showEvents: true,
+  });
+
+  // Handle Continue Conversation (with streaming)
+  const handleContinue = () => {
     if (!continueInput.trim()) return;
 
-    try {
-      await continueConversation.mutateAsync({
+    console.log('[ConversationDetail] 🚀 Starting continue stream');
+    
+    streaming.startStreaming((onEvent, onComplete, onError) => {
+      return api.continueConversationStream(
         threadId,
-        userInput: continueInput,
-      });
-      setContinueInput('');
-      setShowContinueForm(false);
-      refetch();
-    } catch (error) {
-      console.error('Failed to continue:', error);
-    }
+        continueInput,
+        onEvent,
+        onComplete,
+        onError
+      );
+    });
   };
 
-  // Handle resume conversation
-  const handleResume = async () => {
+  // Handle Resume Conversation (with streaming)
+  const handleResume = () => {
     if (!resumeInput.trim()) return;
 
-    try {
-      await resumeConversation.mutateAsync({
+    console.log('[ConversationDetail] 🚀 Starting resume stream');
+    
+    streaming.startStreaming((onEvent, onComplete, onError) => {
+      return api.resumeConversationStream(
         threadId,
-        supplierResponse: resumeInput,
-      });
-      setResumeInput('');
-      setShowResumeForm(false);
-      refetch();
-    } catch (error) {
-      console.error('Failed to resume:', error);
-    }
+        resumeInput,
+        onEvent,
+        onComplete,
+        onError
+      );
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="py-12">
-        <Spinner size="lg" text="Loading conversation details..." />
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-neutral-600">Loading conversation...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (!conversation) {
     return (
-      <div className="max-w-2xl mx-auto py-12">
+      <div className="max-w-6xl mx-auto p-6">
         <Card>
           <CardContent>
-            <div className="text-center py-8">
-              <AlertCircle size={48} className="mx-auto text-error-600 mb-4" />
-              <p className="text-error-600 text-lg font-medium mb-2">Failed to load conversation</p>
-              <p className="text-neutral-600 mb-4">{error.message}</p>
-              <div className="flex gap-3 justify-center">
-                <Button onClick={() => navigate('/')}>Back to Dashboard</Button>
-                <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
-              </div>
+            <div className="text-center py-12">
+              <XCircle size={48} className="mx-auto text-error-600 mb-4" />
+              <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+                Conversation Not Found
+              </h3>
+              <p className="text-neutral-600 mb-6">
+                The conversation you're looking for doesn't exist or has been deleted.
+              </p>
+              <Button onClick={() => navigate('/')}>
+                Back to Dashboard
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -98,469 +131,447 @@ export default function ConversationDetail() {
     );
   }
 
-  // Safe access to properties with defaults
-  const status = conversation?.status || 'unknown';
-  const intent = conversation?.intent || 'unknown';
-  const isPaused = conversation?.is_paused || false;
-  const intentConfig = INTENT_CONFIG[intent] || { label: intent, icon: '📝' };
+  const isPaused = conversation.is_paused;
+  const status = conversation.status;
+  const intent = conversation.intent;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        leftIcon={<ArrowLeft size={16} />}
-        onClick={() => navigate('/')}
-      >
-        Back to Dashboard
-      </Button>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<ArrowLeft size={16} />}
+            onClick={() => navigate('/')}
+          >
+            Back
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Conversation Details</h1>
+            <p className="text-sm text-neutral-600 font-mono mt-1">
+              Thread: {threadId}
+            </p>
+          </div>
+        </div>
 
-      {/* Header Card */}
+        {/* Status Badge */}
+        <div className="flex items-center gap-3">
+          {isPaused && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-warning-50 border border-warning-200 rounded-lg">
+              <Pause size={16} className="text-warning-600" />
+              <span className="text-sm font-medium text-warning-900">Paused</span>
+            </div>
+          )}
+          <StatusBadge status={status} />
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-2 border-b border-neutral-200">
+        <TabButton
+          active={activeTab === 'overview'}
+          onClick={() => setActiveTab('overview')}
+          icon={<FileText size={16} />}
+        >
+          Overview
+        </TabButton>
+        <TabButton
+          active={activeTab === 'messages'}
+          onClick={() => setActiveTab('messages')}
+          icon={<MessageSquare size={16} />}
+        >
+          Messages
+        </TabButton>
+        <TabButton
+          active={activeTab === 'continue'}
+          onClick={() => setActiveTab('continue')}
+          icon={<Send size={16} />}
+          disabled={isPaused}
+        >
+          Continue
+        </TabButton>
+        {isPaused && (
+          <TabButton
+            active={activeTab === 'resume'}
+            onClick={() => setActiveTab('resume')}
+            icon={<Play size={16} />}
+          >
+            Resume
+          </TabButton>
+        )}
+      </div>
+
+      {/* Tab Content */}
+      <div className="space-y-6">
+        {activeTab === 'overview' && (
+          <OverviewTab conversation={conversation} />
+        )}
+
+        {activeTab === 'messages' && (
+          <MessagesTab messages={messagesData?.messages || []} />
+        )}
+
+        {activeTab === 'continue' && !streaming.streamState.isStreaming && (
+          <ContinueTab
+            input={continueInput}
+            setInput={setContinueInput}
+            onSubmit={handleContinue}
+            disabled={isPaused}
+          />
+        )}
+
+        {activeTab === 'resume' && !streaming.streamState.isStreaming && (
+          <ResumeTab
+            input={resumeInput}
+            setInput={setResumeInput}
+            onSubmit={handleResume}
+          />
+        )}
+
+        {/* Streaming Progress */}
+        {streaming.streamState.isStreaming && (
+          <div className="space-y-4">
+            {streaming.renderProgress()}
+            <Button
+              variant="outline"
+              onClick={streaming.stopStreaming}
+              fullWidth
+            >
+              Stop Processing
+            </Button>
+          </div>
+        )}
+
+        {/* Completion Message */}
+        {!streaming.streamState.isStreaming && 
+         streaming.streamState.events.length > 0 && 
+         !streaming.streamState.error && (
+          <Card>
+            <CardContent>
+              <div className="text-center py-8">
+                <CheckCircle size={48} className="mx-auto text-success-600 mb-4" />
+                <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+                  {activeTab === 'continue' ? 'Conversation Continued!' : 'Conversation Resumed!'}
+                </h3>
+                <p className="text-neutral-600 mb-4">
+                  Your request has been processed successfully
+                </p>
+                <Button onClick={() => setActiveTab('overview')}>
+                  View Updated Conversation
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// TAB COMPONENTS
+// ============================================
+
+function OverviewTab({ conversation }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Basic Info */}
       <Card>
+        <CardHeader>
+          <CardTitle>Basic Information</CardTitle>
+        </CardHeader>
         <CardContent>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">{intentConfig.icon}</span>
-                <h1 className="text-2xl font-bold text-neutral-900">{intentConfig.label}</h1>
-                <StatusBadge status={status} />
-              </div>
-              <p className="text-neutral-600 mb-4">
-                Thread ID: <span className="font-mono text-sm">{conversation?.thread_id || threadId}</span>
-              </p>
-              <div className="flex items-center gap-6 text-sm text-neutral-600">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  <span>{formatDateTime(conversation?.created_at)}</span>
-                </div>
-                {isPaused && (
-                  <div className="flex items-center gap-2 text-warning-600">
-                    <Clock size={16} />
-                    <span>Waiting for response</span>
-                  </div>
-                )}
-                {conversation?.intent_confidence && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs">Confidence:</span>
-                    <span className="font-medium">{(conversation.intent_confidence * 100).toFixed(0)}%</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<RefreshCw size={16} />}
-                onClick={() => refetch()}
-              >
-                Refresh
-              </Button>
-            </div>
+          <div className="space-y-3">
+            <InfoRow label="Intent" value={conversation.intent || 'Unknown'} />
+            <InfoRow label="Status" value={conversation.status} />
+            <InfoRow 
+              label="Created" 
+              value={new Date(conversation.created_at).toLocaleString()} 
+            />
+            <InfoRow 
+              label="Updated" 
+              value={new Date(conversation.updated_at).toLocaleString()} 
+            />
+            {conversation.next_step && (
+              <InfoRow label="Next Step" value={conversation.next_step} />
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Error Display */}
-      {conversation?.error && (
+      {/* Extracted Parameters */}
+      {conversation.extracted_parameters && (
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package size={18} />
+              Extracted Parameters
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="p-4 bg-error-50 border border-error-200 rounded-lg">
+            <div className="space-y-3">
+              {conversation.extracted_parameters.fabric_details && (
+                <>
+                  <InfoRow 
+                    label="Fabric Type" 
+                    value={conversation.extracted_parameters.fabric_details.type} 
+                  />
+                  <InfoRow 
+                    label="Quantity" 
+                    value={`${conversation.extracted_parameters.fabric_details.quantity} ${conversation.extracted_parameters.fabric_details.unit}`} 
+                  />
+                  <InfoRow 
+                    label="Urgency" 
+                    value={conversation.extracted_parameters.urgency_level} 
+                  />
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quote Info */}
+      {conversation.quote && (
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText size={18} />
+              Quote Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-neutral-700">Quote ID:</span>
+                <span className="text-sm font-mono text-neutral-900">{conversation.quote.quote_id}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-neutral-700">Options:</span>
+                <span className="text-sm text-neutral-900">{conversation.quote.total_options_count} suppliers</span>
+              </div>
+              {conversation.quote.estimated_savings && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-neutral-700">Potential Savings:</span>
+                  <span className="text-sm font-semibold text-success-600">
+                    {conversation.quote.estimated_savings}%
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Negotiation Info */}
+      {conversation.negotiation && (
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Negotiation Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <InfoRow 
+                label="Rounds" 
+                value={conversation.negotiation.negotiation_rounds} 
+              />
+              <InfoRow 
+                label="Status" 
+                value={conversation.negotiation.negotiation_status} 
+              />
+              {conversation.negotiation.negotiation_topic && (
+                <InfoRow 
+                  label="Topic" 
+                  value={conversation.negotiation.negotiation_topic} 
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function MessagesTab({ messages }) {
+  if (!messages || messages.length === 0) {
+    return (
+      <Card>
+        <CardContent>
+          <div className="text-center py-12 text-neutral-500">
+            <MessageSquare size={48} className="mx-auto mb-4 text-neutral-400" />
+            <p>No messages yet</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Message History</CardTitle>
+        <CardDescription>{messages.length} messages</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {messages.map((msg, idx) => (
+            <div 
+              key={idx}
+              className="p-4 bg-neutral-50 rounded-lg border border-neutral-200"
+            >
               <div className="flex items-start gap-3">
-                <AlertCircle className="text-error-600 shrink-0" size={20} />
-                <div>
-                  <p className="font-medium text-error-900">Workflow Error</p>
-                  <p className="text-sm text-error-700 mt-1">{conversation.error}</p>
-                  {conversation.error_type && (
-                    <p className="text-xs text-error-600 mt-1">Type: {conversation.error_type}</p>
+                <MessageSquare size={16} className="text-primary-600 mt-1" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium text-primary-700 uppercase">
+                      {msg.role || 'Assistant'}
+                    </span>
+                    {msg.timestamp && (
+                      <span className="text-xs text-neutral-500">
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-neutral-700">{msg.content}</p>
+                  {msg.node && (
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Node: {msg.node}
+                    </p>
                   )}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Extracted Parameters */}
-      {conversation?.extracted_parameters && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Request Details</CardTitle>
-            <CardDescription>Extracted from your message</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ParametersDisplay parameters={conversation.extracted_parameters} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Supplier Search Results */}
-      {conversation?.supplier_search && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Supplier Search Results</CardTitle>
-            <CardDescription>
-              Found {conversation.supplier_search.total_suppliers_found || 0} suppliers, 
-              showing top {conversation.supplier_search.top_recommendations?.length || 0}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {conversation.supplier_search.market_insights && (
-              <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
-                <p className="text-sm text-primary-900">{conversation.supplier_search.market_insights}</p>
-              </div>
-            )}
-            {conversation.supplier_search.top_recommendations && (
-              <div className="space-y-4">
-                {conversation.supplier_search.top_recommendations.map((supplier, index) => (
-                  <SupplierCard key={supplier.supplier_id || index} supplier={supplier} rank={index + 1} />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quote Details */}
-      {conversation?.quote && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Quote Details</CardTitle>
-                <CardDescription>Quote ID: {conversation.quote.quote_id}</CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<Download size={16} />}
-              >
-                Download PDF
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <QuoteDisplay quote={conversation.quote} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Negotiation State */}
-      {conversation?.negotiation && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Negotiation Progress</CardTitle>
-            <CardDescription>
-              Round {conversation.negotiation.negotiation_rounds || 1} - 
-              Status: {conversation.negotiation.negotiation_status || 'Unknown'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <NegotiationDisplay negotiation={conversation.negotiation} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Action Buttons */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions</CardTitle>
-          <CardDescription>Continue or manage this conversation</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Continue Form */}
-            {!isPaused && (
-              <>
-                {!showContinueForm ? (
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    leftIcon={<MessageSquare size={18} />}
-                    onClick={() => setShowContinueForm(true)}
-                  >
-                    Continue Conversation
-                  </Button>
-                ) : (
-                  <div className="space-y-3">
-                    <Textarea
-                      placeholder="Enter your follow-up message..."
-                      value={continueInput}
-                      onChange={(e) => setContinueInput(e.target.value)}
-                      rows={4}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleContinue}
-                        loading={continueConversation.isPending}
-                        fullWidth
-                      >
-                        Send
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowContinueForm(false);
-                          setContinueInput('');
-                        }}
-                        disabled={continueConversation.isPending}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Resume Form */}
-            {isPaused && (
-              <>
-                {!showResumeForm ? (
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    leftIcon={<MessageSquare size={18} />}
-                    onClick={() => setShowResumeForm(true)}
-                  >
-                    Resume with Supplier Response
-                  </Button>
-                ) : (
-                  <div className="space-y-3">
-                    <Textarea
-                      placeholder="Paste the supplier's response here..."
-                      value={resumeInput}
-                      onChange={(e) => setResumeInput(e.target.value)}
-                      rows={6}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handleResume}
-                        loading={resumeConversation.isPending}
-                        fullWidth
-                      >
-                        Resume Negotiation
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowResumeForm(false);
-                          setResumeInput('');
-                        }}
-                        disabled={resumeConversation.isPending}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Parameters Display Component
-function ParametersDisplay({ parameters }) {
-  if (!parameters) return null;
-  
-  const fabric = parameters.fabric_details || {};
-  
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {fabric.type && (
-        <InfoItem icon={<Package />} label="Fabric Type" value={fabric.type} />
-      )}
-      {fabric.quantity && (
-        <InfoItem 
-          icon={<Package />} 
-          label="Quantity" 
-          value={`${formatNumber(fabric.quantity)} ${fabric.unit || ''}`} 
-        />
-      )}
-      {parameters.urgency_level && (
-        <InfoItem 
-          icon={<Clock />} 
-          label="Urgency" 
-          value={parameters.urgency_level} 
-        />
-      )}
-      {fabric.certifications && fabric.certifications.length > 0 && (
-        <div className="col-span-full">
-          <p className="text-sm font-medium text-neutral-700 mb-2">Certifications</p>
-          <div className="flex flex-wrap gap-2">
-            {fabric.certifications.map((cert, idx) => (
-              <span key={idx} className="px-3 py-1 bg-success-100 text-success-700 text-sm rounded-full">
-                {cert}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Quote Display Component
-function QuoteDisplay({ quote }) {
-  if (!quote) return null;
-
-  return (
-    <div className="space-y-6">
-      {/* Summary Stats */}
-      {quote.supplier_options && quote.supplier_options.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <InfoItem 
-            icon={<Building2 />} 
-            label="Options" 
-            value={quote.total_options_count || quote.supplier_options.length} 
-          />
-          {quote.estimated_savings && (
-            <InfoItem 
-              icon={<DollarSign />} 
-              label="Est. Savings" 
-              value={`${quote.estimated_savings}%`}
-              highlight
-            />
-          )}
-        </div>
-      )}
-
-      {/* Supplier Options */}
-      {quote.supplier_options && quote.supplier_options.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="font-semibold text-neutral-900">Supplier Options</h4>
-          {quote.supplier_options.map((supplier, index) => (
-            <SupplierOptionCard key={index} supplier={supplier} rank={index + 1} />
           ))}
         </div>
-      )}
-
-      {/* Strategic Analysis */}
-      {quote.strategic_analysis && (
-        <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-lg">
-          <h4 className="font-semibold text-neutral-900 mb-2">Strategic Analysis</h4>
-          {quote.strategic_analysis.market_assessment && (
-            <p className="text-sm text-neutral-700 mb-2">{quote.strategic_analysis.market_assessment}</p>
-          )}
-          {quote.strategic_analysis.recommended_supplier && (
-            <p className="text-sm text-primary-700 font-medium">
-              Recommended: {quote.strategic_analysis.recommended_supplier}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Supplier Card Component
-function SupplierCard({ supplier, rank }) {
+function ContinueTab({ input, setInput, onSubmit, disabled }) {
   return (
-    <div className="p-4 border border-neutral-200 rounded-lg hover:border-primary-300 transition-all">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center shrink-0">
-          #{rank}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
-            <div>
-              <h4 className="font-semibold text-neutral-900">{supplier.name}</h4>
-              <p className="text-sm text-neutral-600">{supplier.location}</p>
-            </div>
-            {supplier.reputation_score && (
-              <div className="flex items-center gap-1">
-                <Award size={16} className="text-warning-500" />
-                <span className="text-sm font-medium">{supplier.reputation_score.toFixed(1)}</span>
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-3 text-sm">
-            <div>
-              <p className="text-neutral-500">Price</p>
-              <p className="font-medium">{formatCurrency(supplier.price_per_unit)}</p>
-            </div>
-            <div>
-              <p className="text-neutral-500">Lead Time</p>
-              <p className="font-medium">{supplier.lead_time_days} days</p>
-            </div>
-            <div>
-              <p className="text-neutral-500">Score</p>
-              <p className="font-medium text-primary-700">{supplier.overall_score?.toFixed(1) || 'N/A'}</p>
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Send size={18} />
+          Continue Conversation
+        </CardTitle>
+        <CardDescription>
+          Send a new message to continue this conversation
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <Textarea
+            placeholder="What would you like to do next? (e.g., 'Can you improve the lead time?')"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={5}
+            disabled={disabled}
+          />
+          <div className="flex gap-3">
+            <Button
+              onClick={onSubmit}
+              disabled={!input.trim() || disabled}
+              leftIcon={<Zap size={18} />}
+              fullWidth
+            >
+              Continue with Live Updates
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Supplier Option Card (for quotes)
-function SupplierOptionCard({ supplier, rank }) {
+function ResumeTab({ input, setInput, onSubmit }) {
   return (
-    <div className="p-4 border border-neutral-200 rounded-lg">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center shrink-0">
-          #{rank}
-        </div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-neutral-900">{supplier.supplier_name}</h4>
-          <p className="text-sm text-neutral-600 mb-3">{supplier.supplier_location}</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div>
-              <p className="text-neutral-500">Unit Price</p>
-              <p className="font-medium">{formatCurrency(supplier.unit_price)}</p>
-            </div>
-            <div>
-              <p className="text-neutral-500">Material Cost</p>
-              <p className="font-medium">{formatCurrency(supplier.material_cost)}</p>
-            </div>
-            <div>
-              <p className="text-neutral-500">Lead Time</p>
-              <p className="font-medium">{supplier.lead_time_days} days</p>
-            </div>
-            <div>
-              <p className="text-neutral-500">Total</p>
-              <p className="font-medium text-primary-700">{formatCurrency(supplier.total_landed_cost)}</p>
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Play size={18} />
+          Resume Negotiation
+        </CardTitle>
+        <CardDescription>
+          Provide the supplier's response to continue negotiation
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <Textarea
+            placeholder="Paste the supplier's response here..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={8}
+          />
+          <div className="flex gap-3">
+            <Button
+              onClick={onSubmit}
+              disabled={!input.trim()}
+              leftIcon={<Zap size={18} />}
+              fullWidth
+            >
+              Resume with Live Updates
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Negotiation Display
-function NegotiationDisplay({ negotiation }) {
-  if (!negotiation) return null;
+// ============================================
+// UTILITY COMPONENTS
+// ============================================
+
+function TabButton({ active, onClick, icon, children, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        flex items-center gap-2 px-4 py-2 border-b-2 transition-all
+        ${active 
+          ? 'border-primary-600 text-primary-700 font-medium' 
+          : 'border-transparent text-neutral-600 hover:text-neutral-900 hover:border-neutral-300'
+        }
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+      `}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function StatusBadge({ status }) {
+  const config = STATUS_CONFIG[status] || { color: 'neutral', label: status };
+  
+  const colorClasses = {
+    success: 'bg-success-50 text-success-700 border-success-200',
+    warning: 'bg-warning-50 text-warning-700 border-warning-200',
+    error: 'bg-error-50 text-error-700 border-error-200',
+    info: 'bg-primary-50 text-primary-700 border-primary-200',
+    neutral: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+  };
 
   return (
-    <div className="space-y-4">
-      {negotiation.drafted_message && (
-        <div className="p-4 bg-neutral-50 rounded-lg">
-          <p className="text-sm font-medium text-neutral-700 mb-2">Last Message:</p>
-          <p className="text-sm text-neutral-600">{truncate(negotiation.drafted_message.message_body || '', 200)}</p>
-        </div>
-      )}
+    <div className={`px-3 py-1.5 rounded-lg border ${colorClasses[config.color] || colorClasses.neutral}`}>
+      <span className="text-sm font-medium">{config.label}</span>
     </div>
   );
 }
 
-// Info Item Component
-function InfoItem({ icon, label, value, highlight = false }) {
+function InfoRow({ label, value }) {
   return (
-    <div className={`p-4 rounded-lg border ${highlight ? 'border-primary-300 bg-primary-50' : 'border-neutral-200 bg-neutral-50'}`}>
-      <div className="flex items-center gap-2 mb-2 text-neutral-600">
-        {icon && <div className="w-4 h-4">{icon}</div>}
-        <p className="text-sm font-medium">{label}</p>
-      </div>
-      <p className={`text-lg font-semibold ${highlight ? 'text-primary-700' : 'text-neutral-900'}`}>
-        {value}
-      </p>
+    <div className="flex justify-between items-center py-2 border-b border-neutral-100 last:border-0">
+      <span className="text-sm font-medium text-neutral-700">{label}</span>
+      <span className="text-sm text-neutral-900">{value}</span>
     </div>
   );
 }
+
