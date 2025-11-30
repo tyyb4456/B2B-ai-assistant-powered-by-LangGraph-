@@ -65,19 +65,19 @@ export const listConversations = (params = {}) => {
 };
 
 // ============================================
-// STREAMING API - USING XMLHttpRequest
+// STREAMING API - HEAVY DEBUG VERSION
 // ============================================
 
 /**
- * 🔥 NUCLEAR OPTION: Use XMLHttpRequest for streaming
- * This is old-school but it ALWAYS works for streaming
- */
-/**
- * 🔥 SIMPLIFIED: Match old working Chat.jsx parsing
+ * 🔥 NUCLEAR DEBUG VERSION
  */
 function createXHRStream(url, method, body, onEvent, onComplete, onError) {
-  console.log('[XHR-SSE] 🚀 Starting stream');
-  console.log('[XHR-SSE] URL:', url);
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('[XHR-SSE] 🚀🚀🚀 STARTING NEW STREAM');
+  console.log('[XHR-SSE] 📍 URL:', url);
+  console.log('[XHR-SSE] 📦 Method:', method);
+  console.log('[XHR-SSE] 📝 Body:', JSON.stringify(body, null, 2));
+  console.log('═══════════════════════════════════════════════════════');
   
   const xhr = new XMLHttpRequest();
   xhr.open(method, url, true);
@@ -85,6 +85,7 @@ function createXHRStream(url, method, body, onEvent, onComplete, onError) {
   
   let lastIndex = 0;
   let capturedThreadId = null;
+  let eventCount = 0;
   
   xhr.onprogress = () => {
     // Get new data since last progress event
@@ -92,50 +93,88 @@ function createXHRStream(url, method, body, onEvent, onComplete, onError) {
     lastIndex = xhr.responseText.length;
     
     if (newData) {
-      console.log('[XHR-SSE] 📥 Progress! New bytes:', newData.length);
+      console.log('─────────────────────────────────────────────────────');
+      console.log(`[XHR-SSE] 📥 PROGRESS #${++eventCount}`);
+      console.log(`[XHR-SSE] 📏 New bytes: ${newData.length}`);
+      console.log(`[XHR-SSE] 📄 Total bytes so far: ${lastIndex}`);
+      console.log('[XHR-SSE] 🔍 Raw chunk:');
+      console.log(newData.substring(0, 500)); // Show first 500 chars
+      console.log('─────────────────────────────────────────────────────');
       
       // Split on newlines
       const lines = newData.split('\n');
+      console.log(`[XHR-SSE] 📋 Split into ${lines.length} lines`);
       
-      for (const line of lines) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const trimmedLine = line.trim();
+        
+        console.log(`[XHR-SSE] Line ${i}:`, trimmedLine === '' ? '(empty)' : trimmedLine.substring(0, 100));
+        
         if (trimmedLine === '') continue;
         
-        // 🔥 SIMPLIFIED: Parse like old Chat.jsx
+        // Skip ping lines
+        if (trimmedLine.startsWith(': ping')) {
+          console.log('[XHR-SSE] ⏭️  Skipping ping');
+          continue;
+        }
+        
+        // Backend format: "data: {...json...}"
         if (trimmedLine.startsWith('data: ')) {
           const dataStr = trimmedLine.slice(6); // Remove "data: "
+          console.log('[XHR-SSE] 🎯 Found data line!');
+          console.log('[XHR-SSE] 📝 Data string:', dataStr);
           
           try {
-            const data = JSON.parse(dataStr);
-            console.log('[XHR-SSE] ✅ Parsed:', data);
+            const parsedData = JSON.parse(dataStr);
+            console.log('[XHR-SSE] ✅ Parsed successfully!');
+            console.log('[XHR-SSE] 📦 Parsed data:', JSON.stringify(parsedData, null, 2));
             
-            // CAPTURE thread_id from events
-            if (data.thread_id && !capturedThreadId) {
-              capturedThreadId = data.thread_id;
-              console.log('[XHR-SSE] 🎯 Captured thread_id:', capturedThreadId);
+            // Extract type
+            const eventType = parsedData.type;
+            console.log('[XHR-SSE] 🏷️  Event type:', eventType);
+            
+            // CAPTURE thread_id
+            if (parsedData.thread_id) {
+              if (!capturedThreadId) {
+                capturedThreadId = parsedData.thread_id;
+                console.log('[XHR-SSE] 🎯🎯🎯 CAPTURED thread_id:', capturedThreadId);
+              }
             }
             
-            // Extract event type from data (it's inside the JSON now)
-            const eventType = data.type || 'message';
+            // Create event object
+            const event = { 
+              type: eventType,
+              data: parsedData
+            };
             
-            // Call callback
-            onEvent({ type: eventType, data });
+            console.log('[XHR-SSE] 🚀 CALLING onEvent with:', JSON.stringify(event, null, 2));
+            
+            // Call the callback
+            onEvent(event);
+            
+            console.log('[XHR-SSE] ✅ onEvent callback completed');
             
           } catch (e) {
-            console.error('[XHR-SSE] Parse error:', e);
-            console.error('[XHR-SSE] Raw:', dataStr);
+            console.error('[XHR-SSE] ❌❌❌ PARSE ERROR!');
+            console.error('[XHR-SSE] Error:', e);
+            console.error('[XHR-SSE] Raw data string:', dataStr);
+            console.error('[XHR-SSE] Stack:', e.stack);
           }
-        }
-        else if (trimmedLine.startsWith('event: done')) {
-          console.log('[XHR-SSE] 🏁 Done event');
-          // Wait for the data line that follows
         }
       }
     }
   };
   
   xhr.onload = () => {
-    console.log('[XHR-SSE] 🏁 Complete!');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[XHR-SSE] 🏁 STREAM COMPLETED (onload)');
+    console.log('[XHR-SSE] 📊 Total events:', eventCount);
+    console.log('[XHR-SSE] 🎯 Captured thread_id:', capturedThreadId || '(none)');
+    console.log('[XHR-SSE] 📡 Status:', xhr.status);
+    console.log('[XHR-SSE] 📏 Total response length:', xhr.responseText.length);
+    console.log('═══════════════════════════════════════════════════════');
+    
     onComplete({ 
       status: 'completed',
       thread_id: capturedThreadId
@@ -143,20 +182,28 @@ function createXHRStream(url, method, body, onEvent, onComplete, onError) {
   };
   
   xhr.onerror = () => {
-    console.error('[XHR-SSE] ❌ Error');
+    console.error('═══════════════════════════════════════════════════════');
+    console.error('[XHR-SSE] ❌❌❌ NETWORK ERROR');
+    console.error('[XHR-SSE] Status:', xhr.status);
+    console.error('[XHR-SSE] Ready state:', xhr.readyState);
+    console.error('═══════════════════════════════════════════════════════');
     onError({ message: 'Network error' });
   };
   
   xhr.onabort = () => {
-    console.log('[XHR-SSE] 🛑 Aborted');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[XHR-SSE] 🛑 STREAM ABORTED');
+    console.log('═══════════════════════════════════════════════════════');
   };
   
   // Send request
+  console.log('[XHR-SSE] 📤 Sending request...');
   xhr.send(body ? JSON.stringify(body) : null);
+  console.log('[XHR-SSE] ✅ Request sent!');
   
   // Return cleanup
   return () => {
-    console.log('[XHR-SSE] 🛑 Aborting');
+    console.log('[XHR-SSE] 🧹 Cleanup called - aborting XHR');
     xhr.abort();
   };
 }
@@ -166,6 +213,7 @@ function createXHRStream(url, method, body, onEvent, onComplete, onError) {
  */
 export const startConversationStream = (data, onEvent, onComplete, onError) => {
   const url = `${apiClient.defaults.baseURL}/conversations/stream`;
+  console.log('[API] 🎬 startConversationStream called');
   
   return createXHRStream(
     url,
@@ -186,6 +234,9 @@ export const startConversationStream = (data, onEvent, onComplete, onError) => {
  */
 export const continueConversationStream = (threadId, userInput, onEvent, onComplete, onError) => {
   const url = `${apiClient.defaults.baseURL}/conversations/${threadId}/stream/continue`;
+  console.log('[API] 🎬 continueConversationStream called');
+  console.log('[API] 🆔 Thread ID:', threadId);
+  console.log('[API] 💬 User input:', userInput);
   
   return createXHRStream(
     url,
@@ -202,6 +253,9 @@ export const continueConversationStream = (threadId, userInput, onEvent, onCompl
  */
 export const resumeConversationStream = (threadId, supplierResponse, onEvent, onComplete, onError) => {
   const url = `${apiClient.defaults.baseURL}/conversations/${threadId}/stream/resume`;
+  console.log('[API] 🎬 resumeConversationStream called');
+  console.log('[API] 🆔 Thread ID:', threadId);
+  console.log('[API] 💬 Supplier response:', supplierResponse.substring(0, 100));
   
   return createXHRStream(
     url,

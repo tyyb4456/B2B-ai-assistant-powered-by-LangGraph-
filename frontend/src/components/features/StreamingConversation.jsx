@@ -3,8 +3,7 @@ import { Loader2, CheckCircle, MessageSquare, Target, Package, Building2, FileTe
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../ui/Card';
 
 /**
- * Reusable Streaming Conversation Component
- * Handles streaming for start, continue, and resume operations
+ * Reusable Streaming Conversation Component - HEAVY DEBUG VERSION
  */
 export default function StreamingConversation({ 
   onComplete, 
@@ -34,7 +33,7 @@ export default function StreamingConversation({
   useEffect(() => {
     return () => {
       if (cleanupRef.current) {
-        console.log('[Streaming] 🧹 Cleanup on unmount');
+        console.log('[StreamingConversation] 🧹 Cleanup on unmount');
         cleanupRef.current();
       }
     };
@@ -42,12 +41,14 @@ export default function StreamingConversation({
 
   /**
    * Start streaming with the provided stream function
-   * @param {Function} streamFn - Function that returns cleanup function
    */
   const startStreaming = (streamFn) => {
-    console.log('[Streaming] 🚀 Starting stream');
+    console.log('╔═══════════════════════════════════════════════════════╗');
+    console.log('║  [StreamingConversation] 🚀 START STREAMING           ║');
+    console.log('╚═══════════════════════════════════════════════════════╝');
     
     // Reset state
+    console.log('[StreamingConversation] 🔄 Resetting state');
     setStreamState({
       isStreaming: true,
       events: [],
@@ -57,13 +58,23 @@ export default function StreamingConversation({
     });
 
     const cleanup = streamFn(
-      // onEvent callback
+      // ✅ onEvent callback
       (event) => {
-        console.log('[Streaming] ✅ Event received:', event);
+        console.log('┌─────────────────────────────────────────────────────┐');
+        console.log('│ [StreamingConversation] 📥 EVENT RECEIVED           │');
+        console.log('└─────────────────────────────────────────────────────┘');
+        console.log('[StreamingConversation] 🎯 Event object:', JSON.stringify(event, null, 2));
         
-        const eventType = event.type || 'message';
+        const eventType = event.type;
+        const eventData = event.data || {};
+        
+        console.log('[StreamingConversation] 🏷️  Event type:', eventType);
+        console.log('[StreamingConversation] 📦 Event data keys:', Object.keys(eventData));
 
         setStreamState(prev => {
+          console.log('[StreamingConversation] 🔄 Updating state...');
+          console.log('[StreamingConversation] 📊 Current state - events:', prev.events.length);
+          
           const newEvents = [...prev.events, event];
           let newNode = prev.currentNode;
           let newThreadId = prev.threadId;
@@ -72,61 +83,85 @@ export default function StreamingConversation({
           switch (eventType) {
             case 'connected':
               newNode = '✅ Connected';
-              newThreadId = event.data?.thread_id || newThreadId;
+              newThreadId = eventData.thread_id || newThreadId;
+              console.log('[StreamingConversation] 🔗 Connected, thread_id:', newThreadId);
               break;
             case 'node_progress':
-              newNode = `⚙️ ${formatNodeName(event.data?.node || 'Processing')}`;
+              newNode = `⚙️ ${formatNodeName(eventData.node || 'Processing')}`;
+              console.log('[StreamingConversation] ⚙️  Node progress:', eventData.node);
               break;
             case 'intent_classified':
-              newNode = `🎯 Intent: ${event.data?.intent || 'Unknown'}`;
+              newNode = `🎯 Intent: ${eventData.intent || 'Unknown'}`;
+              console.log('[StreamingConversation] 🎯 Intent:', eventData.intent);
               break;
             case 'parameters_extracted':
               newNode = '📋 Parameters Extracted';
+              console.log('[StreamingConversation] 📋 Parameters extracted');
               break;
             case 'suppliers_found':
-              const supplierCount = event.data?.count || (event.data?.suppliers?.length || 0);
-              newNode = `🏢 Found ${supplierCount} Suppliers`;
+              const supplierCount = eventData.count || (eventData.suppliers?.length || 0);
+              newNode = `� Found ${supplierCount} Suppliers`;
+              console.log('[StreamingConversation] � Suppliers:', supplierCount);
               break;
             case 'quote_generated':
               newNode = '📄 Quote Generated';
+              console.log('[StreamingConversation] 📄 Quote generated:', eventData.quote_id);
               break;
             case 'message_drafted':
-              newNode = '✍️ Message Drafted';
+              newNode = '✏️ Message Drafted';
+              console.log('[StreamingConversation] ✏️ Message drafted');
               break;
             case 'response_analyzed':
               newNode = '🔍 Response Analyzed';
+              console.log('[StreamingConversation] 🔍 Response analyzed');
               break;
             case 'message':
-              newNode = `💬 ${formatNodeName(event.data?.node || 'Message')}`;
+              newNode = `💬 ${formatNodeName(eventData.node || 'Message')}`;
+              console.log('[StreamingConversation] 💬 Message from node:', eventData.node);
               break;
             case 'workflow_complete':
               newNode = '✅ Completed';
-              newThreadId = event.data?.thread_id || newThreadId;
+              newThreadId = eventData.thread_id || newThreadId;
+              console.log('[StreamingConversation] ✅ Workflow complete, thread_id:', newThreadId);
               break;
             case 'error':
               newNode = '❌ Error';
+              console.error('[StreamingConversation] ❌ Error event');
               break;
             case 'close':
               newNode = '✅ Stream Closed';
-              newThreadId = event.data?.thread_id || newThreadId;
+              newThreadId = eventData.thread_id || newThreadId;
+              console.log('[StreamingConversation] 🔒 Stream closed, thread_id:', newThreadId);
               break;
+            default:
+              console.warn('[StreamingConversation] ⚠️  Unknown event type:', eventType);
           }
 
-          return {
+          const newState = {
             ...prev,
             events: newEvents,
             currentNode: newNode,
             threadId: newThreadId,
           };
+          
+          console.log('[StreamingConversation] ✅ State updated');
+          console.log('[StreamingConversation] 📊 New state - events:', newEvents.length, 'node:', newNode, 'thread_id:', newThreadId);
+          
+          return newState;
         });
       },
       
-      // onComplete callback
+      // ✅ onComplete callback
       (data) => {
-        console.log('[Streaming] ✅ Stream completed', data);
+        console.log('╔═══════════════════════════════════════════════════════╗');
+        console.log('║  [StreamingConversation] ✅ STREAM COMPLETED          ║');
+        console.log('╚═══════════════════════════════════════════════════════╝');
+        console.log('[StreamingConversation] 📦 Completion data:', JSON.stringify(data, null, 2));
         
         setStreamState(prev => {
           const finalThreadId = data.thread_id || prev.threadId;
+          console.log('[StreamingConversation] 🎯 Final thread_id:', finalThreadId);
+          console.log('[StreamingConversation] 📊 Total events:', prev.events.length);
           
           const finalState = {
             ...prev,
@@ -137,18 +172,26 @@ export default function StreamingConversation({
 
           // Call completion callback
           if (onComplete) {
+            console.log('[StreamingConversation] 📞 Calling onComplete callback...');
             setTimeout(() => {
+              console.log('[StreamingConversation] 🎬 Executing onComplete with:', finalThreadId, prev.events.length, 'events');
               onComplete(finalThreadId, prev.events);
             }, 500);
+          } else {
+            console.warn('[StreamingConversation] ⚠️  No onComplete callback provided!');
           }
 
           return finalState;
         });
       },
       
-      // onError callback
+      // ✅ onError callback
       (error) => {
-        console.error('[Streaming] ❌ Error:', error);
+        console.error('╔═══════════════════════════════════════════════════════╗');
+        console.error('║  [StreamingConversation] ❌ ERROR                      ║');
+        console.error('╚═══════════════════════════════════════════════════════╝');
+        console.error('[StreamingConversation] Error:', error);
+        console.error('[StreamingConversation] Error message:', error.message);
         
         setStreamState(prev => ({
           ...prev,
@@ -162,12 +205,16 @@ export default function StreamingConversation({
         }));
 
         if (onError) {
+          console.log('[StreamingConversation] 📞 Calling onError callback');
           onError(error);
+        } else {
+          console.warn('[StreamingConversation] ⚠️  No onError callback provided!');
         }
       }
     );
 
     cleanupRef.current = cleanup;
+    console.log('[StreamingConversation] ✅ Cleanup function stored');
   };
 
   /**
@@ -175,7 +222,7 @@ export default function StreamingConversation({
    */
   const stopStreaming = () => {
     if (cleanupRef.current) {
-      console.log('[Streaming] 🛑 Manual stop');
+      console.log('[StreamingConversation] 🛑 Manual stop requested');
       cleanupRef.current();
       cleanupRef.current = null;
       
@@ -451,7 +498,7 @@ function StreamEventCard({ event, index }) {
         
         {eventType === 'suppliers_found' && eventData.suppliers && (
           <div className="mt-2">
-            <p className="text-xs text-neutral-600 mb-1 font-medium">🏢 Suppliers:</p>
+            <p className="text-xs text-neutral-600 mb-1 font-medium">� Suppliers:</p>
             <div className="space-y-1">
               {eventData.suppliers.slice(0, 3).map((supplier, idx) => (
                 <div key={idx} className="text-xs text-neutral-600 bg-warning-50 p-1 rounded">

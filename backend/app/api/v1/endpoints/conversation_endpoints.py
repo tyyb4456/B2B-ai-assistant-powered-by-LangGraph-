@@ -122,6 +122,12 @@ async def stream_workflow_events(
                 yield event_data.encode('utf-8')
                 await asyncio.sleep(0.1)  # 🔥 Force flush
                 break
+
+            # Skip LangGraph tuple events (these are commands like interrupts, not state updates)
+            if isinstance(event, tuple):
+                logger.debug(f"[SSE] Skipping LangGraph command tuple: {type(event)}")
+                continue
+            
             
             # LangGraph format: {"node_name": {...state_updates...}}
             if not isinstance(event, dict) or not event:
@@ -142,7 +148,9 @@ async def stream_workflow_events(
                 elif hasattr(node_data, 'dict'):
                     node_data = node_data.dict()
                 else:
-                    node_data = {}
+                    # Skip events where we can't extract a dict
+                    logger.warning(f"[SSE] Cannot convert node_data to dict, skipping")
+                    continue
             
             # Send node progress event
             event_data = format_sse_event("node_progress", {

@@ -35,12 +35,12 @@ export default function ConversationDetail() {
   // Form states
   const [continueInput, setContinueInput] = useState('');
   const [resumeInput, setResumeInput] = useState('');
-  const [activeTab, setActiveTab] = useState('overview'); // overview | continue | resume
+  const [activeTab, setActiveTab] = useState('overview'); // overview | messages | continue | resume
 
-  // Streaming setup
+  // 🔥 FIXED: Streaming setup with proper thread_id handling
   const streaming = StreamingConversation({
     onComplete: (completedThreadId, events) => {
-      console.log('[ConversationDetail] ✅ Streaming completed', completedThreadId, events.length);
+      console.log('[ConversationDetail] ✅ Streaming completed', completedThreadId || threadId, events.length);
       
       // Refetch conversation data
       refetch();
@@ -50,7 +50,7 @@ export default function ConversationDetail() {
       setContinueInput('');
       setResumeInput('');
       
-      // Switch back to overview
+      // Switch back to overview after a delay
       setTimeout(() => {
         setActiveTab('overview');
       }, 2000);
@@ -65,14 +65,19 @@ export default function ConversationDetail() {
   const handleContinue = () => {
     if (!continueInput.trim()) return;
 
-    console.log('[ConversationDetail] 🚀 Starting continue stream');
+    console.log('[ConversationDetail] 🚀 Starting continue stream for thread:', threadId);
     
     streaming.startStreaming((onEvent, onComplete, onError) => {
       return api.continueConversationStream(
         threadId,
         continueInput,
         onEvent,
-        onComplete,
+        // 🔥 FIXED: Wrap onComplete to pass threadId since continue/resume don't return it
+        (data) => {
+          console.log('[ConversationDetail] Continue completed:', data);
+          // Pass the threadId from URL since backend doesn't return it for continue/resume
+          onComplete({ ...data, thread_id: threadId });
+        },
         onError
       );
     });
@@ -82,14 +87,18 @@ export default function ConversationDetail() {
   const handleResume = () => {
     if (!resumeInput.trim()) return;
 
-    console.log('[ConversationDetail] 🚀 Starting resume stream');
+    console.log('[ConversationDetail] 🚀 Starting resume stream for thread:', threadId);
     
     streaming.startStreaming((onEvent, onComplete, onError) => {
       return api.resumeConversationStream(
         threadId,
         resumeInput,
         onEvent,
-        onComplete,
+        // 🔥 FIXED: Wrap onComplete to pass threadId
+        (data) => {
+          console.log('[ConversationDetail] Resume completed:', data);
+          onComplete({ ...data, thread_id: threadId });
+        },
         onError
       );
     });
@@ -188,7 +197,7 @@ export default function ConversationDetail() {
           active={activeTab === 'continue'}
           onClick={() => setActiveTab('continue')}
           icon={<Send size={16} />}
-          disabled={isPaused}
+          disabled={isPaused || streaming.streamState.isStreaming}
         >
           Continue
         </TabButton>
@@ -197,6 +206,7 @@ export default function ConversationDetail() {
             active={activeTab === 'resume'}
             onClick={() => setActiveTab('resume')}
             icon={<Play size={16} />}
+            disabled={streaming.streamState.isStreaming}
           >
             Resume
           </TabButton>
@@ -205,11 +215,11 @@ export default function ConversationDetail() {
 
       {/* Tab Content */}
       <div className="space-y-6">
-        {activeTab === 'overview' && (
+        {activeTab === 'overview' && !streaming.streamState.isStreaming && (
           <OverviewTab conversation={conversation} />
         )}
 
-        {activeTab === 'messages' && (
+        {activeTab === 'messages' && !streaming.streamState.isStreaming && (
           <MessagesTab messages={messagesData?.messages || []} />
         )}
 
@@ -230,7 +240,7 @@ export default function ConversationDetail() {
           />
         )}
 
-        {/* Streaming Progress */}
+        {/* 🔥 FIXED: Show streaming progress when active */}
         {streaming.streamState.isStreaming && (
           <div className="space-y-4">
             {streaming.renderProgress()}
@@ -574,4 +584,3 @@ function InfoRow({ label, value }) {
     </div>
   );
 }
-
