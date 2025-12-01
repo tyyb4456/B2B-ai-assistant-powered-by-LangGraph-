@@ -115,8 +115,8 @@ graph_builder.add_edge('generate_quote', END)
 
 graph_builder.add_edge('start_negotiation', 'draft_negotiation_message')
 graph_builder.add_edge('draft_negotiation_message', 'validate_and_enhance_message')
-# graph_builder.add_edge('validate_and_enhance_message', 'send_negotiation_message')
-graph_builder.add_edge('validate_and_enhance_message', 'receive_supplier_response')
+graph_builder.add_edge('validate_and_enhance_message', 'send_negotiation_message')
+graph_builder.add_edge('send_negotiation_message', 'receive_supplier_response')
 graph_builder.add_edge('receive_supplier_response', 'analyze_supplier_response') 
 
 # Add conditional routing

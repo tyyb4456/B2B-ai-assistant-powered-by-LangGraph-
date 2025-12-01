@@ -4,8 +4,13 @@ from composio_langchain import LangchainProvider
 from langchain.chat_models import init_chat_model
 from langchain.agents import create_agent
 
+from app.services.supplier_request_service import get_supplier_request_service
+from database import SessionLocal
+from loguru import logger
 
-def send_negotiation_message(state: AgentState):
+
+
+async def send_negotiation_message(state: AgentState):
     """
     Node to send the drafted message to the user's email.
     """
@@ -85,7 +90,37 @@ def send_negotiation_message(state: AgentState):
                     # Store the last message text
                     if text_content:
                         final_message_text = text_content
-    
+
+    # 🔥 NEW: Create supplier request when workflow will pause
+    db = SessionLocal()
+    try:
+        request_service = get_supplier_request_service(db)
+        
+        # Extract supplier email from state
+        supplier_email = "igntayyab@gmail.com"
+        supplier_id = state.get("active_supplier_id")  # Add this to your state
+        
+        # Create request
+        await request_service.create_supplier_request(
+            thread_id=state.get("thread_id"),  # Add thread_id to your state
+            supplier_id=supplier_id,
+            request_type="negotiation",
+            request_subject=f"Negotiation Round {state.get('negotiation_rounds', 1)}",
+            request_message=state.get("validated_message"),
+            request_context={
+                "negotiation_rounds": state.get("negotiation_rounds"),
+                "negotiation_objective": state.get("negotiation_objective"),
+                "extracted_parameters": state.get("extracted_parameters")
+            },
+            priority="high" if state.get("urgency_level") == "urgent" else "medium"
+        )
+        
+        logger.success("✅ Supplier request created successfully")
+        
+    finally:
+        db.close()
+
+
     # Update state to reflect email was sent
     state['email_sent'] = True
     state['drafted_message_sender_agent'] = messages_log

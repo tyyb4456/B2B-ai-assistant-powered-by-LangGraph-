@@ -3,9 +3,12 @@ API Dependencies - Reusable dependencies for FastAPI endpoints
 
 Provides common dependencies like service instances, authentication, etc.
 """
-from typing import Optional
-from fastapi import Header, HTTPException, status
+from fastapi import Header, HTTPException, status, Depends
 from loguru import logger
+from typing import Generator, Optional
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from database import SessionLocal, SupplierUser
 
 from app.services.conversation_service import get_enhanced_conversation_service, EnhancedConversationService
 
@@ -97,3 +100,52 @@ async def validate_thread_exists(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Conversation not found: {thread_id}"
         )
+    
+
+
+# Database session dependency
+def get_db() -> Generator:
+    """Get database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# OAuth2 scheme for token authentication
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/supplier/login")
+
+
+# Get current supplier user from token
+def get_current_supplier_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> SupplierUser:
+    """
+    Get current authenticated supplier user from token
+    
+    TODO: Implement proper JWT token validation
+    For now, simplified version for development
+    """
+    # Simplified token parsing (format: "token_{user_id}_{supplier_id}")
+    try:
+        parts = token.split('_')
+        if len(parts) >= 2:
+            user_id = int(parts[1])
+            
+            user = db.query(SupplierUser).filter(
+                SupplierUser.id == user_id,
+                SupplierUser.is_active == True
+            ).first()
+            
+            if user:
+                return user
+    except:
+        pass
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid authentication credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )

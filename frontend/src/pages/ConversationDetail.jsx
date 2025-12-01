@@ -18,6 +18,12 @@ import {
   XCircle,
   Pause,
   Play,
+  TrendingUp,
+  AlertTriangle,
+  AlertCircle,
+  BookOpen,
+  BarChart3,
+  Briefcase,
 } from 'lucide-react';
 import { STATUS_CONFIG } from '../utils/constants';
 
@@ -286,24 +292,29 @@ export default function ConversationDetail() {
 
 function OverviewTab({ conversation }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Basic Info */}
+    <div className="space-y-6">
+      {/* BASIC INFORMATION */}
       <Card>
         <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText size={20} />
+            Basic Information
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
+            <InfoRow label="Thread ID" value={conversation.thread_id} />
             <InfoRow label="Intent" value={conversation.intent || 'Unknown'} />
+            {conversation.intent_confidence && (
+              <InfoRow label="Intent Confidence" value={`${(conversation.intent_confidence * 100).toFixed(0)}%`} />
+            )}
             <InfoRow label="Status" value={conversation.status} />
-            <InfoRow 
-              label="Created" 
-              value={new Date(conversation.created_at).toLocaleString()} 
-            />
-            <InfoRow 
-              label="Updated" 
-              value={new Date(conversation.updated_at).toLocaleString()} 
-            />
+            <InfoRow label="Paused" value={conversation.is_paused ? 'Yes' : 'No'} />
+            {conversation.requires_human_review && (
+              <InfoRow label="Requires Review" value="Yes" />
+            )}
+            <InfoRow label="Created" value={new Date(conversation.created_at).toLocaleString()} />
+            <InfoRow label="Updated" value={new Date(conversation.updated_at).toLocaleString()} />
             {conversation.next_step && (
               <InfoRow label="Next Step" value={conversation.next_step} />
             )}
@@ -311,12 +322,12 @@ function OverviewTab({ conversation }) {
         </CardContent>
       </Card>
 
-      {/* Extracted Parameters */}
+      {/* EXTRACTED PARAMETERS */}
       {conversation.extracted_parameters && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Package size={18} />
+              <Package size={20} />
               Extracted Parameters
             </CardTitle>
           </CardHeader>
@@ -324,50 +335,35 @@ function OverviewTab({ conversation }) {
             <div className="space-y-3">
               {conversation.extracted_parameters.fabric_details && (
                 <>
-                  <InfoRow 
-                    label="Fabric Type" 
-                    value={conversation.extracted_parameters.fabric_details.type} 
-                  />
-                  <InfoRow 
-                    label="Quantity" 
-                    value={`${conversation.extracted_parameters.fabric_details.quantity} ${conversation.extracted_parameters.fabric_details.unit}`} 
-                  />
-                  <InfoRow 
-                    label="Urgency" 
-                    value={conversation.extracted_parameters.urgency_level} 
-                  />
+                  <InfoRow label="Fabric Type" value={conversation.extracted_parameters.fabric_details.type} />
+                  <InfoRow label="Quantity" value={`${conversation.extracted_parameters.fabric_details.quantity} ${conversation.extracted_parameters.fabric_details.unit}`} />
                 </>
               )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quote Info */}
-      {conversation.quote && (
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText size={18} />
-              Quote Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-neutral-700">Quote ID:</span>
-                <span className="text-sm font-mono text-neutral-900">{conversation.quote.quote_id}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-neutral-700">Options:</span>
-                <span className="text-sm text-neutral-900">{conversation.quote.total_options_count} suppliers</span>
-              </div>
-              {conversation.quote.estimated_savings && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-neutral-700">Potential Savings:</span>
-                  <span className="text-sm font-semibold text-success-600">
-                    {conversation.quote.estimated_savings}%
-                  </span>
+              {conversation.extracted_parameters.urgency_level && (
+                <InfoRow label="Urgency" value={conversation.extracted_parameters.urgency_level} />
+              )}
+              {conversation.extracted_parameters.request_type && (
+                <InfoRow label="Request Type" value={conversation.extracted_parameters.request_type} />
+              )}
+              {conversation.extracted_parameters.confidence && (
+                <InfoRow label="Confidence" value={`${(conversation.extracted_parameters.confidence * 100).toFixed(0)}%`} />
+              )}
+              {conversation.extracted_parameters.supplier_preference && (
+                <InfoRow label="Supplier Preference" value={conversation.extracted_parameters.supplier_preference} />
+              )}
+              {conversation.extracted_parameters.payment_terms && (
+                <InfoRow label="Payment Terms" value={conversation.extracted_parameters.payment_terms} />
+              )}
+              {conversation.extracted_parameters.needs_clarification && (
+                <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
+                  <p className="text-xs font-semibold text-warning-900 mb-1">⚠️ Clarification Needed</p>
+                  {conversation.extracted_parameters.clarification_questions?.length > 0 && (
+                    <ul className="text-xs text-warning-800 space-y-1">
+                      {conversation.extracted_parameters.clarification_questions.map((q, i) => (
+                        <li key={i}>• {q}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
             </div>
@@ -375,28 +371,343 @@ function OverviewTab({ conversation }) {
         </Card>
       )}
 
-      {/* Negotiation Info */}
-      {conversation.negotiation && (
-        <Card className="lg:col-span-2">
+      {/* SUPPLIER SEARCH */}
+      {conversation.supplier_search && (
+        <Card>
           <CardHeader>
-            <CardTitle>Negotiation Status</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp size={20} />
+              Supplier Search Results
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <InfoRow 
-                label="Rounds" 
-                value={conversation.negotiation.negotiation_rounds} 
-              />
-              <InfoRow 
-                label="Status" 
-                value={conversation.negotiation.negotiation_status} 
-              />
-              {conversation.negotiation.negotiation_topic && (
-                <InfoRow 
-                  label="Topic" 
-                  value={conversation.negotiation.negotiation_topic} 
-                />
+              <InfoRow label="Total Found" value={conversation.supplier_search.total_suppliers_found} />
+              <InfoRow label="Filtered" value={conversation.supplier_search.filtered_suppliers} />
+              {conversation.supplier_search.search_strategy && (
+                <InfoRow label="Strategy" value={conversation.supplier_search.search_strategy} />
               )}
+              {conversation.supplier_search.confidence && (
+                <InfoRow label="Confidence" value={`${(conversation.supplier_search.confidence * 100).toFixed(0)}%`} />
+              )}
+              {conversation.supplier_search.market_insights && (
+                <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                  <p className="text-xs font-semibold text-primary-900">📊 Market Insights</p>
+                  <p className="text-xs text-primary-800 mt-1">{conversation.supplier_search.market_insights}</p>
+                </div>
+              )}
+              {conversation.supplier_search.top_recommendations?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-neutral-700">Top Recommendations:</p>
+                  {conversation.supplier_search.top_recommendations.slice(0, 3).map((supplier, idx) => (
+                    <div key={idx} className="p-2 bg-neutral-50 rounded border border-neutral-200">
+                      <p className="text-sm font-semibold text-neutral-900">{supplier.name}</p>
+                      <div className="text-xs text-neutral-600 space-y-1 mt-1">
+                        <p>📍 {supplier.location}</p>
+                        {supplier.price_per_unit && <p>💰 ${supplier.price_per_unit}/unit</p>}
+                        {supplier.lead_time_days && <p>⏱️ {supplier.lead_time_days} days</p>}
+                        <p>⭐ Score: {supplier.overall_score.toFixed(1)}/100</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* QUOTE DETAILS */}
+      {conversation.quote && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 size={20} />
+              Quote Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
+                <p className="text-xs text-primary-700 font-medium">Quote ID</p>
+                <p className="text-sm font-mono text-primary-900 mt-1">{conversation.quote.quote_id}</p>
+              </div>
+              <div className="p-3 bg-success-50 rounded-lg border border-success-200">
+                <p className="text-xs text-success-700 font-medium">Total Options</p>
+                <p className="text-sm font-bold text-success-900 mt-1">{conversation.quote.total_options_count}</p>
+              </div>
+            </div>
+            {conversation.quote.estimated_savings && (
+              <div className="p-3 bg-success-50 border border-success-200 rounded-lg">
+                <p className="text-xs font-semibold text-success-900">💰 Potential Savings</p>
+                <p className="text-xl font-bold text-success-700 mt-1">{conversation.quote.estimated_savings}%</p>
+              </div>
+            )}
+            {conversation.quote.validity_days && (
+              <InfoRow label="Quote Valid For" value={`${conversation.quote.validity_days} days`} />
+            )}
+            {conversation.quote.strategic_analysis && (
+              <div className="p-3 bg-secondary-50 border border-secondary-200 rounded-lg space-y-2">
+                <p className="text-xs font-semibold text-secondary-900">📋 Strategic Analysis</p>
+                {conversation.quote.strategic_analysis.market_assessment && (
+                  <p className="text-xs text-secondary-800">{conversation.quote.strategic_analysis.market_assessment}</p>
+                )}
+                {conversation.quote.strategic_analysis.negotiation_opportunities?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-secondary-900 mb-1">Negotiation Opportunities:</p>
+                    <ul className="text-xs text-secondary-800 space-y-1">
+                      {conversation.quote.strategic_analysis.negotiation_opportunities.map((opp, i) => (
+                        <li key={i}>• {opp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* NEGOTIATION */}
+      {conversation.negotiation && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase size={20} />
+              Negotiation Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <InfoRow label="Status" value={conversation.negotiation.negotiation_status} />
+              <InfoRow label="Rounds" value={conversation.negotiation.negotiation_rounds} />
+              {conversation.negotiation.negotiation_topic && (
+                <InfoRow label="Topic" value={conversation.negotiation.negotiation_topic} />
+              )}
+              {conversation.negotiation.current_position && (
+                <InfoRow label="Current Position" value={conversation.negotiation.current_position} />
+              )}
+              {conversation.negotiation.negotiation_strategy && (
+                <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                  <p className="text-xs font-semibold text-primary-900">🎯 Strategy</p>
+                  {conversation.negotiation.negotiation_strategy.primary_approach && (
+                    <p className="text-xs text-primary-800 mt-1">{conversation.negotiation.negotiation_strategy.primary_approach}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SUPPLIER RESPONSE ANALYSIS */}
+      {conversation.supplier_response_analysis && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle size={20} />
+              Supplier Response Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {conversation.supplier_response_analysis.supplier_intent && (
+                <InfoRow label="Supplier Intent" value={conversation.supplier_response_analysis.supplier_intent.intent_type} />
+              )}
+              {conversation.supplier_response_analysis.analysis_confidence && (
+                <InfoRow label="Analysis Confidence" value={`${(conversation.supplier_response_analysis.analysis_confidence * 100).toFixed(0)}%`} />
+              )}
+              {conversation.supplier_response_analysis.supplier_offers?.length > 0 && (
+                <div className="p-2 bg-success-50 rounded border border-success-200">
+                  <p className="text-xs font-semibold text-success-900 mb-1">✅ Supplier Offers:</p>
+                  <ul className="text-xs text-success-800 space-y-1">
+                    {conversation.supplier_response_analysis.supplier_offers.map((offer, i) => (
+                      <li key={i}>• {offer}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {conversation.supplier_response_analysis.risk_alerts?.length > 0 && (
+                <div className="p-2 bg-error-50 rounded border border-error-200">
+                  <p className="text-xs font-semibold text-error-900 mb-1">⚠️ Risk Alerts:</p>
+                  <ul className="text-xs text-error-800 space-y-1">
+                    {conversation.supplier_response_analysis.risk_alerts.map((alert, i) => (
+                      <li key={i}>• {alert}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CLARIFICATION */}
+      {conversation.clarification && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle size={20} />
+              Clarification Required
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <InfoRow label="Request Type" value={conversation.clarification.request_type} />
+              {conversation.clarification.urgency_level && (
+                <InfoRow label="Urgency" value={conversation.clarification.urgency_level} />
+              )}
+              {conversation.clarification.root_cause_analysis && (
+                <div className="p-2 bg-warning-50 rounded border border-warning-200">
+                  <p className="text-xs font-semibold text-warning-900">Root Cause:</p>
+                  <p className="text-xs text-warning-800 mt-1">{conversation.clarification.root_cause_analysis}</p>
+                </div>
+              )}
+              {conversation.clarification.questions?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-neutral-700 mb-2">Questions to Address:</p>
+                  {conversation.clarification.questions.map((q, i) => (
+                    <div key={i} className="text-xs p-2 bg-neutral-50 rounded mb-1">
+                      <p className="font-medium text-neutral-900">{q.question_text}</p>
+                      <p className="text-neutral-600 mt-1">Type: {q.question_type} | Priority: {q.priority}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* CONTRACT */}
+      {conversation.contract && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen size={20} />
+              Contract Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {conversation.contract.contract_id && (
+                <InfoRow label="Contract ID" value={conversation.contract.contract_id} />
+              )}
+              <InfoRow label="Ready" value={conversation.contract.contract_ready ? 'Yes' : 'No'} />
+              <InfoRow label="Legal Review Required" value={conversation.contract.requires_legal_review ? 'Yes' : 'No'} />
+              {conversation.contract.contract_confidence && (
+                <InfoRow label="Confidence" value={`${(conversation.contract.contract_confidence * 100).toFixed(0)}%`} />
+              )}
+              {conversation.contract.risk_assessment && (
+                <div className="p-2 bg-warning-50 rounded border border-warning-200">
+                  <p className="text-xs font-semibold text-warning-900">⚠️ Risk Assessment</p>
+                  <p className="text-xs text-warning-800 mt-1">Level: {conversation.contract.risk_assessment.overall_risk_level}</p>
+                  {conversation.contract.risk_assessment.risk_factors?.length > 0 && (
+                    <ul className="text-xs text-warning-800 mt-1 space-y-1">
+                      {conversation.contract.risk_assessment.risk_factors.map((factor, i) => (
+                        <li key={i}>• {factor}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* FOLLOW-UP */}
+      {conversation.follow_up && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock size={20} />
+              Follow-up Schedule
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {conversation.follow_up.schedule_id && (
+                <InfoRow label="Schedule ID" value={conversation.follow_up.schedule_id} />
+              )}
+              {conversation.follow_up.next_follow_up_date && (
+                <InfoRow label="Next Follow-up" value={new Date(conversation.follow_up.next_follow_up_date).toLocaleString()} />
+              )}
+              {conversation.follow_up.follow_up_dates?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-neutral-700 mb-2">Scheduled Dates:</p>
+                  <ul className="text-xs text-neutral-600 space-y-1">
+                    {conversation.follow_up.follow_up_dates.map((date, i) => (
+                      <li key={i}>• {new Date(date).toLocaleString()}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* NEXT STEPS */}
+      {conversation.next_steps_recommendations && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp size={20} />
+              Next Steps & Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {conversation.next_steps_recommendations.immediate_actions?.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-neutral-900 mb-1">🚀 Immediate Actions:</p>
+                <ul className="text-xs text-neutral-700 space-y-1">
+                  {conversation.next_steps_recommendations.immediate_actions.map((action, i) => (
+                    <li key={i}>• {action}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {conversation.next_steps_recommendations.short_term_strategies?.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-neutral-900 mb-1">📅 Short-term Strategies:</p>
+                <ul className="text-xs text-neutral-700 space-y-1">
+                  {conversation.next_steps_recommendations.short_term_strategies.map((strategy, i) => (
+                    <li key={i}>• {strategy}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {conversation.next_steps_recommendations.alternative_suppliers?.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-neutral-900 mb-1">🔄 Alternative Suppliers:</p>
+                {conversation.next_steps_recommendations.alternative_suppliers.map((supplier, i) => (
+                  <div key={i} className="text-xs p-2 bg-neutral-50 rounded mb-1">
+                    <p className="font-medium text-neutral-900">{supplier.supplier_name}</p>
+                    <p className="text-neutral-600">{supplier.why_better}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ERRORS */}
+      {conversation.error && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-error-900">
+              <XCircle size={20} />
+              Error Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="p-3 bg-error-50 border border-error-200 rounded-lg">
+              {conversation.error_type && (
+                <p className="text-xs font-semibold text-error-900 mb-1">Type: {conversation.error_type}</p>
+              )}
+              <p className="text-sm text-error-800">{conversation.error}</p>
             </div>
           </CardContent>
         </Card>

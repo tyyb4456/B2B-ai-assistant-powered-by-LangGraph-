@@ -1018,16 +1018,21 @@ async def resume_conversation_stream(
             yield format_sse_event("error", {
                 "thread_id": thread_id,
                 "error": str(e)
-            })
+            }).encode('utf-8')
     
     return StreamingResponse(
         event_generator(),
-        media_type="text/event-stream",
+        media_type="text/event-stream; charset=utf-8",
         headers={
-            "Cache-Control": "no-cache, no-transform",
+            "Cache-Control": "no-cache, no-store, no-transform, must-revalidate",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
             "Transfer-Encoding": "chunked",
+            "Content-Encoding": "none",
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
         }
     )
 
@@ -1070,16 +1075,21 @@ async def continue_conversation_stream(
             yield format_sse_event("error", {
                 "thread_id": thread_id,
                 "error": str(e)
-            })
+            }).encode('utf-8')
     
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
         headers={
-            "Cache-Control": "no-cache, no-transform",
+            "Cache-Control": "no-cache, no-store, no-transform, must-revalidate",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
+            "Content-Encoding": "none",
             "Transfer-Encoding": "chunked",
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
         }
     )
 

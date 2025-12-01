@@ -12,6 +12,7 @@ import random
 
 # Database connection
 DATABASE_URL = "sqlite:///./suppliers.db"
+print(f"Connecting to database at {DATABASE_URL}")
 engine = create_engine(DATABASE_URL, echo=True)
 
 def seed_suppliers():
@@ -583,7 +584,7 @@ def verify_data():
             result = conn.execute(text(query))
             count = result.fetchone()[0]
             print(f"  ✓ {fabric}: {count} suppliers found")
-
+import os
 
 if __name__ == "__main__":
     print("="*60)
