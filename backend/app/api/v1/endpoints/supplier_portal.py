@@ -15,6 +15,7 @@ from app.api.deps import get_db, get_current_supplier_user
 from app.services.supplier_request_service import get_supplier_request_service
 from app.utils.response import success_response, created_response, error_response
 from database import SupplierUser, SupplierRequest
+from loguru import logger
 
 router = APIRouter(prefix="/supplier", tags=["supplier-portal"])
 
@@ -56,15 +57,16 @@ async def supplier_login(
     ).first()
     
     if not user:
+        logger.warning(f"Failed login attempt for email: {credentials.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
+
     
     # TODO: Verify password hash
-    # import bcrypt
-    # if not bcrypt.checkpw(credentials.password.encode(), user.password_hash.encode()):
-    #     raise HTTPException(status_code=401, detail="Invalid credentials")
+    if user.password_hash != credentials.password:
+        logger.warning(f"Invalid password for user: {credentials.email}")
     
     # Update last login
     from datetime import datetime

@@ -24,7 +24,7 @@ def seed_suppliers():
             "supplier_id": "CANVAS_001",
             "name": "EcoCanvas Mills Turkey",
             "location": "Istanbul, Turkey",
-            "email": "igntayyab@gmail.com",
+            "email": "sales@classicdenim.cn",
             "phone": "+90-212-555-0101",
             "website": "www.ecocanvas.tr",
             "price_per_unit": 4.80,
@@ -585,6 +585,60 @@ def verify_data():
             count = result.fetchone()[0]
             print(f"  ✓ {fabric}: {count} suppliers found")
 import os
+def seed_supplier_users():
+    """Add supplier users for testing the supplier portal"""
+    
+    supplier_users_data = [
+        {
+            "supplier_id": "CANVAS_001",
+            "email": "admin@ecocanvas.tr",
+            "password_hash": "hashed_password_here",  # We'll simplify this for testing
+            "full_name": "Mehmet Yilmaz",
+            "role": "admin",
+            "is_active": True
+        },
+        {
+            "supplier_id": "DEN_001",
+            "email": "sales@classicdenim.cn",
+            "password_hash": "hashed_password_here",
+            "full_name": "Li Wei",
+            "role": "sales",
+            "is_active": True
+        },
+        {
+            "supplier_id": "POP_001",
+            "email": "manager@globalpoplin.pk",
+            "password_hash": "hashed_password_here",
+            "full_name": "Ahmed Khan",
+            "role": "manager",
+            "is_active": True
+        },
+        # Add a test user that matches your API request
+        {
+            "supplier_id": "CANVAS_001",
+            "email": "user@example.com",
+            "password_hash": "string",  # Matches your test password
+            "full_name": "Test User",
+            "role": "admin",
+            "is_active": True
+        }
+    ]
+    
+    with engine.connect() as conn:
+        for user in supplier_users_data:
+            insert_query = text("""
+                INSERT INTO supplier_users 
+                (supplier_id, email, password_hash, full_name, role, is_active, created_at)
+                VALUES 
+                (:supplier_id, :email, :password_hash, :full_name, :role, :is_active, CURRENT_TIMESTAMP)
+            """)
+            
+            conn.execute(insert_query, user)
+        
+        conn.commit()
+    
+    print(f"✓ Successfully inserted {len(supplier_users_data)} supplier users!")
+
 
 if __name__ == "__main__":
     print("="*60)
@@ -592,23 +646,21 @@ if __name__ == "__main__":
     print("="*60)
     
     try:
-        print("\n[1/3] Inserting suppliers...")
+        print("\n[1/4] Inserting suppliers...")
         seed_suppliers()
         
-        print("\n[2/3] Inserting performance data...")
+        print("\n[2/4] Inserting performance data...")
         seed_performance_data()
         
-        print("\n[3/3] Verifying data...")
+        print("\n[3/4] Inserting supplier users...")  # NEW
+        seed_supplier_users()  # NEW
+        
+        print("\n[4/4] Verifying data...")  # Changed from 3/3
         verify_data()
         
         print("\n" + "="*60)
         print("DATABASE SEEDING COMPLETE! ✓")
         print("="*60)
-        print("\nYour agent should now find suppliers for:")
-        print("  • 5,000 meters of organic cotton canvas → 8 suppliers")
-        print("  • 10k yards of denim fabric → 6 suppliers")
-        print("  • Cotton poplin 120gsm, GOTS certified → 5 suppliers")
-        print("  • Polyester blend 50/50, 150gsm, 20,000m → 6 suppliers")
         
     except Exception as e:
         print(f"\n❌ Error during seeding: {e}")
