@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // Mock API - replace with your actual API
-const API_BASE = 'http://localhost:8000/api/v1/supplier';
+const API_BASE = 'http://127.0.0.1:8000/api/v1/supplier';
 
 function RequestDetailPage({ requestId, onBack }) {
   const [request, setRequest] = useState(null);

@@ -40,9 +40,9 @@ export default function ConversationDetail() {
 
   // Form states
   const [continueInput, setContinueInput] = useState('');
-  const [resumeInput, setResumeInput] = useState('');
   const [activeTab, setActiveTab] = useState('overview'); // overview | messages | continue | resume
   const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [isResuming, setIsResuming] = useState(false);
   
   // Supplier selection
   const selectSupplierMutation = useSelectSupplier() || { mutate: () => {}, isPending: false };
@@ -58,7 +58,6 @@ export default function ConversationDetail() {
       
       // Reset forms
       setContinueInput('');
-      setResumeInput('');
       
       // Switch back to overview after a delay
       setTimeout(() => {
@@ -95,16 +94,14 @@ export default function ConversationDetail() {
 
   // Handle Resume Conversation (with streaming)
   const handleResume = () => {
-    if (!resumeInput.trim()) return;
-
     console.log('[ConversationDetail] 🚀 Starting resume stream for thread:', threadId);
     
     streaming.startStreaming((onEvent, onComplete, onError) => {
       return api.resumeConversationStream(
         threadId,
-        resumeInput,
+        'resume', // Trigger resume workflow (supplier response already saved in DB)
         onEvent,
-        // 🔥 FIXED: Wrap onComplete to pass threadId
+        // Wrap onComplete to pass threadId
         (data) => {
           console.log('[ConversationDetail] Resume completed:', data);
           onComplete({ ...data, thread_id: threadId });
@@ -113,6 +110,7 @@ export default function ConversationDetail() {
       );
     });
   };
+
 
   if (isLoading) {
     return (
@@ -251,8 +249,6 @@ export default function ConversationDetail() {
 
         {activeTab === 'resume' && !streaming.streamState.isStreaming && (
           <ResumeTab
-            input={resumeInput}
-            setInput={setResumeInput}
             onSubmit={handleResume}
           />
         )}
@@ -899,8 +895,7 @@ function ContinueTab({ input, setInput, onSubmit, disabled }) {
     </Card>
   );
 }
-
-function ResumeTab({ input, setInput, onSubmit }) {
+function ResumeTab({ onSubmit }) {
   return (
     <Card>
       <CardHeader>
@@ -909,27 +904,18 @@ function ResumeTab({ input, setInput, onSubmit }) {
           Resume Negotiation
         </CardTitle>
         <CardDescription>
-          Provide the supplier's response to continue negotiation
+          Click below to resume the workflow with the supplier's response
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <Textarea
-            placeholder="Paste the supplier's response here..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            rows={8}
-          />
-          <div className="flex gap-3">
-            <Button
-              onClick={onSubmit}
-              disabled={!input.trim()}
-              leftIcon={<Zap size={18} />}
-              fullWidth
-            >
-              Resume with Live Updates
-            </Button>
-          </div>
+        <div className="flex gap-3">
+          <Button
+            onClick={onSubmit}
+            leftIcon={<Zap size={18} />}
+            fullWidth
+          >
+            Resume with Live Updates
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const API_BASE = 'http://localhost:8000/api/v1/supplier';
+const API_BASE = 'http://127.0.0.1:8000/api/v1/supplier';
 
 export default function ResponseModal({ requestId, isOpen, onClose, onSuccess }) {
   const [request, setRequest] = useState(null);

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ResponseModal from '../components/modals/ResponseModal';
 
 // Mock API calls - replace with real API
-const API_BASE = 'http://localhost:8000/api/v1/supplier';
+const API_BASE = 'http://127.0.0.1:8000/api/v1/supplier';
 
 function SupplierDashboard() {
   const navigate = useNavigate();
