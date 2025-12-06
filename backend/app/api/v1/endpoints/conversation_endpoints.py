@@ -81,9 +81,9 @@ async def stream_workflow_events(
             "timestamp": datetime.utcnow().isoformat()
         })
         logger.info(f"[SSE] Sending connected event, size: {len(event_data)}")
-        yield event_data.encode('utf-8')  # 🔥 Encode to bytes
-        await asyncio.sleep(0.1)  #  CRITICAL: Force immediate flush to client
-    
+        yield event_data.encode('utf-8')  # Encode to bytes
+        await asyncio.sleep(0.1)  # CRITICAL: Force immediate flush to client
+        
         logger.info(f"[SSE] Starting stream for thread: {thread_id}")
         
         # Choose the right workflow method
@@ -120,7 +120,7 @@ async def stream_workflow_events(
                     "error": str(event["error"])
                 })
                 yield event_data.encode('utf-8')
-                await asyncio.sleep(0.1)  # 🔥 Force flush
+                await asyncio.sleep(0.1)  # Force flush
                 break
 
             # Skip LangGraph tuple events (these are commands like interrupts, not state updates)
@@ -161,7 +161,7 @@ async def stream_workflow_events(
             })
             logger.info(f"[SSE] Sending node_progress event, size: {len(event_data)}")
             yield event_data.encode('utf-8')
-            await asyncio.sleep(0.15)  # 🔥 INCREASED: Force flush between events (150ms for visibility)
+            await asyncio.sleep(0.15)  # INCREASED: Force flush between events (150ms for visibility)
             
             # Extract and send messages
             messages = node_data.get("messages")
@@ -202,7 +202,7 @@ async def stream_workflow_events(
                         })
                         logger.info(f"[SSE] Sending message event, size: {len(event_data)}")
                         yield event_data.encode('utf-8')
-                        await asyncio.sleep(0.1)  #  Force flush
+                        await asyncio.sleep(0.1)  # Force flush
             
             # Send specific events for important nodes
             if node_name == "classify_intent":
@@ -289,7 +289,7 @@ async def stream_workflow_events(
                     yield event_data.encode('utf-8')
             
             # Small delay between events - forces buffer flush
-            await asyncio.sleep(0.15)  # INCREASED for better visibility
+            await asyncio.sleep(0.15)  # 🔥 INCREASED for better visibility
         
         # Get final state and send completion
         logger.info(f"[SSE] Workflow generator exhausted, fetching final state")
@@ -821,7 +821,7 @@ async def resume_conversation_stream(
             detail=f"Conversation is not paused: {thread_id}"
         )
     
-    # 🔥 FIXED: Always try to fetch supplier response from database using request_id
+    # FIXED: Always try to fetch supplier response from database using request_id
     supplier_response = None
     request_id = request.request_id
     
