@@ -146,9 +146,12 @@ class SupplierRequestService:
             graph_manager = get_graph_manager()
             
             logger.info(f"submit_supplier_response Attempting to update state for thread: {request.thread_id}")
-            
-            # Update only the current_request_id key - do NOT pass entire state
-            update_dict = {'current_request_id': request_id}
+
+            # Update current_request_id and current_round_status so App A can see it
+            update_dict = {
+                'current_request_id': request_id,
+                'current_round_status': 'awaiting_supplier_response_review'
+            }
             logger.info(f"submit_supplier_response Setting current_request_id to: {request_id}")
             
             # Update the state without running workflow

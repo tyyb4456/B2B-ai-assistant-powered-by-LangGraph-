@@ -1005,40 +1005,54 @@ async def resume_conversation_stream(
             detail=f"Conversation is not paused: {thread_id}"
         )
     
-    # 🔥 FIX: Fetch the actual supplier response from the database instead of using request parameter
-    supplier_response = request.supplier_response
-    if supplier_response:
-        logger.info(f"Initial supplier response length: {len(supplier_response) if supplier_response else 0}")
-        logger.info(f"Request ID for fetching supplier response: {request.request_id}")
-        logger.info(f"Type of supplier response provided: {type(supplier_response)}")
-        logger.info(f"Supplier response preview: {supplier_response[:100] if supplier_response else 'N/A'}")
+    # 🔥 FIXED: Always try to fetch supplier response from database using request_id
+    supplier_response = None
+    request_id = request.request_id
     
-    if not supplier_response and request.request_id:
-        # Fetch the actual supplier response from the SupplierRequest record
-        logger.info(f"Fetching supplier response for request_id: {request.request_id}")
+    # If request_id not provided in request body, try to get from conversation state
+    if not request_id:
         try:
-            # Query the database directly to get the supplier response
-            from database import SupplierRequest
-            db = service.db
-            supplier_request_record = db.query(SupplierRequest).filter(
-                SupplierRequest.request_id == request.request_id
-            ).first()
-            
-            if supplier_request_record and supplier_request_record.supplier_response:
-                supplier_response = supplier_request_record.supplier_response
-                logger.info(f"Fetched supplier response from DB: {supplier_response[:100]}...")
-            else:
-                logger.warning(f"Could not find supplier response in DB for request_id: {request.request_id}")
-                # Fall back to the provided supplier_response (will check if empty below)
+            current_state = await service.graph_manager.get_state(thread_id)
+            if current_state:
+                request_id = current_state.get('current_request_id')
+                logger.info(f"Got request_id from conversation state: {request_id}")
         except Exception as e:
-            logger.warning(f"Failed to fetch supplier response from DB: {e}")
-            # Continue - will fail validation if supplier_response is empty
+            logger.warning(f"Failed to get request_id from state: {e}")
+    
+    if request_id:
+        # Fetch the actual supplier response from the SupplierRequest record
+        logger.info(f"Fetching supplier response for request_id: {request_id}")
+        try:
+            from database import SupplierRequest, SessionLocal
+            db = SessionLocal()
+            try:
+                supplier_request_record = db.query(SupplierRequest).filter(
+                    SupplierRequest.request_id == request_id
+                ).first()
+                
+                if supplier_request_record:
+                    if supplier_request_record.supplier_response:
+                        supplier_response = supplier_request_record.supplier_response
+                        logger.info(f"Fetched supplier response from DB: {supplier_response[:100] if len(supplier_response) > 100 else supplier_response}...")
+                    else:
+                        logger.warning(f"Supplier request found but no response yet for request_id: {request_id}")
+                else:
+                    logger.warning(f"Could not find supplier request in DB for request_id: {request_id}")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"Failed to fetch supplier response from DB: {e}", exc_info=True)
+    
+    # Fall back to request body if provided
+    if not supplier_response and request.supplier_response:
+        supplier_response = request.supplier_response
+        logger.info(f"Using supplier_response from request body")
     
     if not supplier_response:
         logger.error(f"No supplier response provided or found for resuming conversation: {thread_id}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Supplier response is required (either supply directly or provide request_id)"
+            detail=f"Supplier response not found. Request ID: {request_id or 'not provided'}"
         )
     
     async def event_generator():

@@ -181,6 +181,8 @@ class NegotiationStateResponse(BaseModel):
     validation_passed: bool = False
     last_message_confidence: Optional[float] = None
     active_supplier_email: Optional[str] = None
+    current_request_id: Optional[str] = None
+    current_round_status: Optional[str] = None
     email_sent: bool = False
     pdf_generated: bool = False
 

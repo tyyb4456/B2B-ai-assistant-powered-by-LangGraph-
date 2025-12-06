@@ -179,4 +179,57 @@
 2025-12-06 13:03:43 | SUCCESS  | app.services.supplier_request_service:submit_supplier_response:158 - submit_supplier_response Updated conversation state with current_request_id: REQ-20251206-5048B50E
 2025-12-06 13:03:43 | INFO     | app.services.supplier_request_service:submit_supplier_response:163 - submit_supplier_response VERIFICATION - current_request_id in state now: REQ-20251206-5048B50E
 2025-12-06 13:03:43 | SUCCESS  | app.api.v1.endpoints.supplier_portal:submit_response:257 - ✅ Response stored (not auto-resumed): REQ-20251206-5048B50E
-2025-12-06 13:03:43 | INFO     | main:log_requests:102 - POST /api/v1/supplier/requests/REQ-20251206-5048B50E/respond - Status: 200
+2025-12-06 13:03:43 | INFO     | main:log_requests:102 - POST /api/v1/supplier/requests/REQ-20251206-5048B50E/respond - Status: 2002025-12-06 15:09:54 | INFO     | app.core.logging:setup_logging:38 - Logging configured: level=INFO, file=app.log
+2025-12-06 15:09:59 | INFO     | main:lifespan:41 - ----------------------------------------
+2025-12-06 15:09:59 | INFO     | main:lifespan:42 - Starting B2B Textile Procurement API
+2025-12-06 15:09:59 | INFO     | main:lifespan:43 - Version: 1.0.0
+2025-12-06 15:09:59 | INFO     | main:lifespan:44 - Debug mode: False
+2025-12-06 15:09:59 | INFO     | main:lifespan:45 - ----------------------------------------
+2025-12-06 15:09:59 | SUCCESS  | main:lifespan:49 - LangGraph initialized
+2025-12-06 15:10:00 | INFO     | main:log_requests:100 - GET /
+2025-12-06 15:10:00 | INFO     | main:log_requests:102 - GET / - Status: 200
+2025-12-06 15:10:00 | INFO     | main:log_requests:100 - GET /favicon.ico
+2025-12-06 15:10:00 | INFO     | main:log_requests:102 - GET /favicon.ico - Status: 404
+2025-12-06 15:10:24 | INFO     | main:log_requests:100 - OPTIONS /api/v1/conversations
+2025-12-06 15:10:24 | INFO     | main:log_requests:102 - OPTIONS /api/v1/conversations - Status: 200
+2025-12-06 15:10:25 | INFO     | main:log_requests:100 - GET /api/v1/conversations
+2025-12-06 15:10:25 | INFO     | app.services.graph_manager:_ensure_initialized:42 - Initializing checkpoint database: B2B-textile-assistant.db
+2025-12-06 15:10:25 | SUCCESS  | app.services.graph_manager:_ensure_initialized:64 - LangGraph initialized successfully
+2025-12-06 15:10:25 | INFO     | app.services.conversation_service:list_conversations:870 - Found 3 conversations
+2025-12-06 15:10:25 | INFO     | main:log_requests:102 - GET /api/v1/conversations - Status: 200
+2025-12-06 15:10:27 | INFO     | main:log_requests:100 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/comprehensive
+2025-12-06 15:10:27 | INFO     | main:log_requests:102 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/comprehensive - Status: 200
+2025-12-06 15:10:27 | INFO     | main:log_requests:100 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/messages
+2025-12-06 15:10:27 | INFO     | main:log_requests:100 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status
+2025-12-06 15:10:27 | INFO     | main:log_requests:100 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/comprehensive
+2025-12-06 15:10:27 | INFO     | main:log_requests:102 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/messages - Status: 200
+2025-12-06 15:10:27 | INFO     | main:log_requests:102 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status - Status: 200
+2025-12-06 15:10:27 | INFO     | main:log_requests:100 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/messages
+2025-12-06 15:10:27 | INFO     | main:log_requests:100 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status
+2025-12-06 15:10:27 | INFO     | main:log_requests:102 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/messages - Status: 200
+2025-12-06 15:10:27 | INFO     | main:log_requests:102 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/comprehensive - Status: 200
+2025-12-06 15:10:27 | INFO     | main:log_requests:102 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status - Status: 200
+2025-12-06 15:10:30 | INFO     | main:log_requests:100 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/stream/resume
+2025-12-06 15:10:30 | INFO     | main:log_requests:102 - OPTIONS /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/stream/resume - Status: 200
+2025-12-06 15:10:30 | INFO     | main:log_requests:100 - POST /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/stream/resume
+2025-12-06 15:10:30 | INFO     | app.api.v1.endpoints.conversation_endpoints:resume_conversation_stream:992 - Resuming streaming conversation: demo_user_afc97b0f-d924-4420-9466-690890bd3968
+2025-12-06 15:10:30 | INFO     | app.api.v1.endpoints.conversation_endpoints:resume_conversation_stream:1024 - Fetching supplier response for request_id: REQ-20251206-1B930CD1
+2025-12-06 15:10:30 | INFO     | app.api.v1.endpoints.conversation_endpoints:resume_conversation_stream:1036 - Fetched supplier response from DB: accept...
+2025-12-06 15:10:30 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:83 - [SSE] Sending connected event, size: 169
+2025-12-06 15:10:30 | INFO     | main:log_requests:102 - POST /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/stream/resume - Status: 200
+2025-12-06 15:10:30 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:87 - [SSE] Starting stream for thread: demo_user_afc97b0f-d924-4420-9466-690890bd3968
+2025-12-06 15:10:30 | INFO     | app.services.graph_manager:resume_with_supplier_response:198 - Resuming paused workflow with supplier response: demo_user_afc97b0f-d924-4420-9466-690890bd3968
+2025-12-06 15:10:30 | INFO     | nodes.supplier_response_analyzer_node:analyze_supplier_response:307 - Starting analysis of supplier response...
+2025-12-06 15:10:30 | INFO     | nodes.supplier_response_analyzer_node:analyze_supplier_response:308 - Supplier Response: accept
+2025-12-06 15:10:33 | INFO     | main:log_requests:100 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status
+2025-12-06 15:10:33 | INFO     | main:log_requests:102 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status - Status: 200
+2025-12-06 15:10:38 | INFO     | main:log_requests:100 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status
+2025-12-06 15:10:38 | INFO     | main:log_requests:102 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status - Status: 200
+2025-12-06 15:10:43 | INFO     | main:log_requests:100 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status
+2025-12-06 15:10:43 | INFO     | main:log_requests:102 - GET /api/v1/conversations/demo_user_afc97b0f-d924-4420-9466-690890bd3968/status - Status: 200
+2025-12-06 15:10:46 | INFO     | nodes.supplier_response_analyzer_node:analyze_supplier_response:398 - Supplier response analysis completed successfully.
+2025-12-06 15:10:46 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:141 - [SSE] Processing node: analyze_supplier_response
+2025-12-06 15:10:46 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:162 - [SSE] Sending node_progress event, size: 167
+2025-12-06 15:10:46 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:203 - [SSE] Sending message event, size: 156
+2025-12-06 15:10:46 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:203 - [SSE] Sending message event, size: 666
+2025-12-06 15:10:46 | INFO     | app.api.v1.endpoints.conversation_endpoints:stream_workflow_events:282 - [SSE] Supplier response analyzed
