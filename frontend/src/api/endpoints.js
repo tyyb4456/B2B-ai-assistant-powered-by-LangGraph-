@@ -77,6 +77,14 @@ export const resumeWorkflowFromSupplierResponse = (requestId) => {
   return apiClient.post(`/supplier/requests/${requestId}/resume-workflow`);
 };
 
+// ADDED THIS NEW FUNCTION
+/**
+ * Check if supplier response is available (for WebSocket alternative/fallback)
+ */
+export const checkSupplierResponseStatus = (threadId) => {
+  return apiClient.get(`/conversations/${threadId}/supplier-response-status`);
+};
+
 export const listConversations = (params = {}) => {
   return apiClient.get('/conversations', {
     params: {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useConversationComprehensive, useConversationMessages, useConversationStatus, useSelectSupplier } from '../api/hooks';
 import * as api from '../api/endpoints';
@@ -27,6 +27,9 @@ import {
 } from 'lucide-react';
 import { STATUS_CONFIG } from '../utils/constants';
 
+// WebSocket configuration
+const WS_BASE = 'ws://localhost:8000/api/v1';
+
 export default function ConversationDetail() {
   const { threadId } = useParams();
   const navigate = useNavigate();
@@ -44,6 +47,12 @@ export default function ConversationDetail() {
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [isResuming, setIsResuming] = useState(false);
   
+  // ADD WebSocket state
+  const [wsConnected, setWsConnected] = useState(false);
+  const [supplierResponseAvailable, setSupplierResponseAvailable] = useState(false);
+  const [wsMessages, setWsMessages] = useState([]);
+  const wsRef = useRef(null);
+    
   // Supplier selection
   const selectSupplierMutation = useSelectSupplier() || { mutate: () => {}, isPending: false };
 
@@ -69,6 +78,98 @@ export default function ConversationDetail() {
     },
     showEvents: true,
   });
+
+    // ✅ ADD WebSocket connection effect
+    useEffect(() => {
+      // Only connect if workflow is active
+      if (!conversation || !statusData?.is_paused) return;
+
+      console.log('🔌 [WS] Initializing WebSocket connection for thread:', threadId);
+      
+      const ws = new WebSocket(`${WS_BASE}/ws/conversations/${threadId}`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('✅ [WS] Connected');
+        setWsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log('📩 [WS] Message received:', data);
+        
+        // Add to debug log
+        setWsMessages(prev => [...prev, { ...data, received_at: new Date().toISOString() }]);
+
+        switch (data.type) {
+          case 'connected':
+            console.log('🟢 [WS] Connection confirmed');
+            break;
+
+          case 'supplier_response_received':
+            console.log('🎉 [WS] SUPPLIER RESPONDED!');
+            setSupplierResponseAvailable(true);
+            
+            // Browser notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Supplier Responded!', {
+                body: data.supplier_response_preview,
+              });
+            }
+            
+            // Refresh data
+            refetch();
+            refetchMessages();
+            break;
+
+          case 'workflow_status_changed':
+            console.log('🔄 [WS] Status changed:', data.status);
+            break;
+
+          case 'message_added':
+            console.log('💬 [WS] New message added');
+            refetchMessages();
+            break;
+
+          default:
+            console.log('❓ [WS] Unknown type:', data.type);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('❌ [WS] Error:', error);
+        setWsConnected(false);
+      };
+
+      ws.onclose = () => {
+        console.log('🔴 [WS] Disconnected');
+        setWsConnected(false);
+      };
+
+      // Heartbeat
+      const heartbeat = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send('ping');
+        }
+      }, 30000);
+
+      // Cleanup
+      return () => {
+        clearInterval(heartbeat);
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      };
+    }, [threadId, conversation, statusData?.is_paused, refetch, refetchMessages]);
+
+    // Request notification permission
+    useEffect(() => {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }, []);
+
+
 
   // Handle Continue Conversation (with streaming)
   const handleContinue = () => {
@@ -192,7 +293,30 @@ export default function ConversationDetail() {
 
         {/* Status Badge */}
         <div className="flex items-center gap-3">
-          {isPaused && (
+          {/* WebSocket Status Indicator */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${
+            wsConnected 
+              ? 'bg-green-50 border border-green-200 text-green-700'
+              : 'bg-gray-100 border border-gray-200 text-gray-600'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${
+              wsConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+            }`}></div>
+            {wsConnected ? 'Live' : 'Offline'}
+          </div>
+
+          {/* Resume Button when supplier responds */}
+          {supplierResponseAvailable && (
+            <button
+              onClick={handleResume}
+              disabled={streaming.streamState.isStreaming}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed animate-pulse"
+            >
+              Resume Now
+            </button>
+          )}
+
+          {isPaused && !supplierResponseAvailable && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-warning-50 border border-warning-200 rounded-lg">
               <Pause size={16} className="text-warning-600" />
               <span className="text-sm font-medium text-warning-900">Paused</span>
@@ -238,6 +362,36 @@ export default function ConversationDetail() {
         )}
       </div>
 
+      {/* WebSocket Debug Panel */}
+      {wsMessages.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-blue-900">
+              📡 Live Updates ({wsMessages.length})
+            </h3>
+            <button
+              onClick={() => setWsMessages([])}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {wsMessages.slice(-5).reverse().map((msg, idx) => (
+              <div key={idx} className="text-xs bg-white rounded p-2 font-mono">
+                <span className="text-blue-600 font-semibold">{msg.type}</span>
+                {msg.message && <span className="text-gray-600 ml-2">{msg.message}</span>}
+                {msg.supplier_response_preview && (
+                  <p className="text-gray-700 mt-1 truncate">{msg.supplier_response_preview}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab Content */}
+      <div className="space-y-6"></div>
       {/* Tab Content */}
       <div className="space-y-6">
         {activeTab === 'overview' && !streaming.streamState.isStreaming && (
@@ -315,69 +469,9 @@ export default function ConversationDetail() {
 // ============================================
 
 function OverviewTab({ conversation, selectedSupplier, setSelectedSupplier, selectSupplierMutation, threadId }) {
-  const [resumingWorkflow, setResumingWorkflow] = React.useState(false);
-  
-  // Check if supplier response is available
-  const hasSupplierResponse = conversation.is_paused && 
-    conversation.negotiation && 
-    conversation.negotiation.current_round_status === 'awaiting_supplier_response_review';
-
-  const handleResumeWorkflow = async () => {
-    try {
-      setResumingWorkflow(true);
-      // Get request ID from negotiation data (you may need to adjust based on your data structure)
-      const requestId = conversation.negotiation?.current_request_id;
-      if (!requestId) {
-        alert('Could not find supplier request ID');
-        return;
-      }
-      
-      const response = await fetch(`${window.location.origin.replace(/:\d+/, ':8000')}/api/v1/supplier/requests/${requestId}/resume-workflow`, {
-        method: 'POST'
-      });
-      
-      if (response.ok) {
-        alert('✅ Workflow resumed successfully');
-        window.location.reload();
-      } else {
-        alert('❌ Failed to resume workflow');
-      }
-    } catch (error) {
-      console.error('Error resuming workflow:', error);
-      alert('Error: ' + error.message);
-    } finally {
-      setResumingWorkflow(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* SUPPLIER RESPONSE RECEIVED BANNER */}
-      {hasSupplierResponse && (
-        <Card>
-          <CardContent>
-            <div className="bg-success-50 border-l-4 border-success-500 p-4 rounded">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-success-900 mb-2">
-                    ✅ Supplier Response Received
-                  </h3>
-                  <p className="text-sm text-success-700 mb-3">
-                    The supplier has submitted their response. Review it and click below to resume the workflow and continue negotiation.
-                  </p>
-                  <Button
-                    onClick={handleResumeWorkflow}
-                    disabled={resumingWorkflow}
-                    className="bg-success-600 hover:bg-success-700 text-white"
-                  >
-                    {resumingWorkflow ? 'Resuming...' : 'Resume Workflow Now'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Manual resume banner removed - now handled by WebSocket button in header */}
 
       {/* BASIC INFORMATION */}
       <Card>

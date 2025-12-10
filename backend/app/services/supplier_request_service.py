@@ -32,66 +32,6 @@ class SupplierRequestService:
     # CREATE SUPPLIER REQUEST
     # ============================================
     
-    async def create_supplier_request(
-        self,
-        thread_id: str,
-        supplier_id: str,
-        request_type: str,
-        request_subject: str,
-        request_message: str,
-        request_context: Optional[Dict[str, Any]] = None,
-        priority: str = "medium",
-        expires_in_hours: Optional[int] = 72
-    ) -> SupplierRequest:
-        """Create a new supplier request when workflow pauses"""
-        
-        logger.info(f"Creating supplier request for thread: {thread_id}, supplier: {supplier_id}")
-        
-        # Generate unique request ID
-        request_id = f"REQ-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
-        
-        # Calculate expiration
-        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours) if expires_in_hours else None
-        
-        # 🔥 FIX: Import here to avoid circular import
-        from app.services.graph_manager import get_graph_manager
-        graph_manager = get_graph_manager()
-        
-        # Get conversation round from graph state
-        state = await graph_manager.get_state(thread_id)
-        conversation_round = state.get("negotiation_rounds", 1) if state else 1
-        
-        # Create request
-        request = SupplierRequest(
-            request_id=request_id,
-            thread_id=thread_id,
-            conversation_round=conversation_round,
-            supplier_id=supplier_id,
-            request_type=request_type,
-            request_subject=request_subject,
-            request_message=request_message,
-            request_context=request_context,
-            status=SupplierRequestStatus.PENDING.value,
-            priority=priority,
-            expires_at=expires_at,
-            created_at=datetime.utcnow()
-        )
-        
-        self.db.add(request)
-        self.db.commit()
-        self.db.refresh(request)
-        
-        logger.success(f"Supplier request created: {request_id}")
-        
-        # Send notification to supplier
-        await self._send_request_notification(request)
-        
-        return request
-    
-    # ============================================
-    # SUPPLIER RESPONSE HANDLING
-    # ============================================
-    
     async def submit_supplier_response(
         self,
         request_id: str,
@@ -170,7 +110,28 @@ class SupplierRequestService:
             logger.warning(f"submit_supplier_response Could not update conversation state with request_id: {e}")
             import traceback
             logger.error(f"submit_supplier_response Traceback: {traceback.format_exc()}")
+
+        # SEND WEBSOCKET NOTIFICATION
+        try:
+            # Import here to avoid circular imports
+            from app.api.v1.endpoints.websocket_endpoints import notify_supplier_response
+            import asyncio
+            
+            # Create task to notify WebSocket clients
+            asyncio.create_task(notify_supplier_response(
+                thread_id=request.thread_id,
+                request_id=request_id,
+                supplier_response=response_text,
+                response_type=response_type
+            ))
+            
+            logger.success(f"🔔 WebSocket notification sent for request: {request_id}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to send WebSocket notification: {e}")
+            # Don't fail the entire operation if notification fails
         
+        # RETURN statement (this was missing!)
         return {
             "request_id": request_id,
             "response_recorded": True,

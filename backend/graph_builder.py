@@ -38,8 +38,8 @@ class Config:
         Your competitor quoted 10% lower, can you match?
     ''')  
     DEFAULT_GET_QUOTE_INPUT = os.getenv("DEFAULT_GET_QUOTE_INPUT", '''
-        I need a quote for 5,000 meters of organic cotton canvas,
-        What's your price for 10k yards of denim fabric?,
+        ,
+        What's your price for 10k yI need a quote for 5,000 meters of organic cotton canvasards of denim fabric?,
         Cost for cotton poplin 120gsm, GOTS certified?,
         Price check: polyester blend, 50/50, 150gsm, quantity 20,000m
     ''')

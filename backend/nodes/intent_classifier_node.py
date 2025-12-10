@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Literal
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from loguru import logger
 from state import AgentState
@@ -74,7 +74,7 @@ Respond ONLY in the structured JSON format. Be concise but thorough."""
         ("human", "Classify this message:\n\n{user_input}")
     ])
 
-model = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+model = init_chat_model("google_genai:gemini-2.5-flash")
 structured_model = model.with_structured_output(IntentClassification)
 prompt_template = create_classification_prompt()
 

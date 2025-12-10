@@ -592,11 +592,12 @@ async def get_conversation_status(
             "intent": state.get("intent"),
             "next_step": state.get("next_step"),
             "is_paused": is_paused,
-            "requires_human_review": state.get("requires_human_review", False)
+            "requires_human_review": state.get("requires_human_review", False),
+            "current_request_id": state.get("current_request_id"),  
+            "current_round_status": state.get("current_round_status") 
         },
         request_id=request_id
     )
-
 
 @router.get(
     "/{thread_id}/extracted-parameters",

@@ -32,7 +32,7 @@ def start_negotiation(state: AgentState):
         logger.info("No existing negotiation messages found.")
     
     # Initialize the model
-    model = init_chat_model("google_genai:gemini-2.5-flash")
+    model = init_chat_model("google_genai:gemini-2.0-flash")
     
     # --- Step 1: Extract negotiation objective ---
     objective_prompt = PromptTemplate(

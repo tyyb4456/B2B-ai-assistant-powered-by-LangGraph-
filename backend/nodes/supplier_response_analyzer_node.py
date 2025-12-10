@@ -235,7 +235,7 @@ Provide comprehensive strategic analysis with specific tactical recommendations.
     ])
 
 # Initialize models and prompts
-model = init_chat_model("google_genai:gemini-2.5-flash")
+model = init_chat_model("google_genai:gemini-2.0-flash-lite")
 intent_model = model.with_structured_output(SupplierIntent)
 terms_model = model.with_structured_output(ExtractedTerms)
 analysis_model = model.with_structured_output(NegotiationAnalysis)

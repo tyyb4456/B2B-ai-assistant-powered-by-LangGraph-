@@ -1,6 +1,6 @@
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from state import AgentState
 from models.negotiation_message_detail import NegotiationStrategy, DraftedMessage
@@ -284,7 +284,7 @@ Draft a complete message ready for transmission that implements the strategic ap
 
 
 # Initialize models and prompts
-model = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+model = init_chat_model("google_genai:gemini-2.0-flash")
 strategy_model = model.with_structured_output(NegotiationStrategy)
 message_model = model.with_structured_output(DraftedMessage)
 

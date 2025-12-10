@@ -1239,10 +1239,10 @@ Third-party Inspection: {third_party_inspection}
 
 Generate the complete contract document with all sections, ready for execution.""")
     ])
-
+from langchain.chat_models import init_chat_model
 
 # Initialize enhanced models
-model = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+model = init_chat_model("google_genai:gemini-2.5-flash")
 terms_model = model.with_structured_output(ContractTerms)
 contract_model = model.with_structured_output(DraftedContract)
 
