@@ -38,10 +38,14 @@ export default function Dashboard() {
         </div>
         <Button
           leftIcon={<Plus size={18} />}
-          onClick={() => navigate('/new')}
+          onClick={() => navigate('/conversation')} // Changed from '/new'
         >
           New Conversation
         </Button>
+
+        {/* <Button onClick={() => navigate('/conversation')}>
+          Start Your First Conversation
+        </Button> */}
       </div>
 
       {/* Stats Cards */}

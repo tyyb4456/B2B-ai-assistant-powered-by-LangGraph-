@@ -1,3 +1,4 @@
+// src/components/layout/Sidebar.jsx
 import { Link, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
@@ -11,7 +12,7 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'New Conversation', href: '/new', icon: MessageSquarePlus },
+  { name: 'New Conversation', href: '/conversation', icon: MessageSquarePlus }, // Updated!
   { name: 'History', href: '/history', icon: History },
   { name: 'Negotiations', href: '/negotiations', icon: Handshake },
 ];
@@ -20,7 +21,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-neutral-200 flex flex-col">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-neutral-200 flex flex-col z-40">
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-6 border-b border-neutral-200">
         <Factory className="text-primary-600" size={32} />
@@ -31,9 +32,13 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
-          const isActive = location.pathname === item.href;
+          // Check if current path matches (exact match for home, starts-with for others)
+          const isActive = item.href === '/' 
+            ? location.pathname === '/'
+            : location.pathname.startsWith(item.href);
+          
           const Icon = item.icon;
 
           return (
@@ -41,9 +46,9 @@ export default function Sidebar() {
               key={item.name}
               to={item.href}
               className={clsx(
-                'flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors',
+                'flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-primary-50 text-primary-700'
+                  ? 'bg-primary-50 text-primary-700 shadow-sm'
                   : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
               )}
             >

@@ -180,7 +180,8 @@ function ConversationRow({ conversation, onClick }) {
   return (
     <Card hoverable>
       <CardContent>
-        <div onClick={onClick} className="flex items-center gap-4 cursor-pointer">
+        <div onClick={() => navigate(`/conversation/${conversation.thread_id}`)}
+        className="flex items-center gap-4 cursor-pointer">
           {/* Icon */}
           <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center text-2xl shrink-0">
             {intentConfig.icon}

@@ -279,9 +279,9 @@ export default function ConversationDetail() {
             variant="ghost"
             size="sm"
             leftIcon={<ArrowLeft size={16} />}
-            onClick={() => navigate('/')}
+            onClick={() => navigate(`/conversation/${threadId}`)} // Changed from '/'
           >
-            Back
+            Back to Conversation
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-neutral-900">Conversation Details</h1>
