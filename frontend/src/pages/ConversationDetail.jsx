@@ -310,7 +310,7 @@ export default function ConversationDetail() {
             <button
               onClick={handleResume}
               disabled={streaming.streamState.isStreaming}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed animate-pulse"
+              className="px-4 py-2 bg-green-600 text-black rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed animate-pulse"
             >
               Resume Now
             </button>
@@ -601,7 +601,7 @@ function OverviewTab({ conversation, selectedSupplier, setSelectedSupplier, sele
                             });
                           }}
                           disabled={selectSupplierMutation.isPending}
-                          className={selectedSupplier?.supplier_id === supplier.supplier_id ? 'bg-primary-600 text-white' : ''}
+                          className={selectedSupplier?.supplier_id === supplier.supplier_id ? 'bg-primary-600 text-black' : ''}
                         >
                           {selectSupplierMutation.isPending && selectedSupplier?.supplier_id === supplier.supplier_id ? 'Selecting...' : selectedSupplier?.supplier_id === supplier.supplier_id ? '✓ Selected' : 'Select'}
                         </Button>

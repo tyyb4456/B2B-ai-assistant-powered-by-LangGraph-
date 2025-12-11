@@ -1,40 +1,29 @@
-// src/components/conversation/ConversationMessages.jsx
 import { useRef, useEffect } from 'react';
-import { MessageSquareIcon, AlertCircle } from 'lucide-react';
-import { Spinner } from '@heroui/react';
+import { MessageSquareIcon, AlertCircle, Lightbulb } from 'lucide-react';
 import ConversationMessage from './ConversationMessage';
 
 export default function ConversationMessages({
   messages,
   streamingMessage,
-  isStreaming,
+  assistantThought,
   error,
   messagesEndRef,
-  onSelectSupplier,
   isLoading
 }) {
   const containerRef = useRef(null);
 
-  // Auto-scroll when new messages arrive
   useEffect(() => {
     if (containerRef.current) {
-      const { scrollHeight, clientHeight, scrollTop } = containerRef.current;
-      const isNearBottom = scrollHeight - clientHeight - scrollTop < 100;
-      
-      if (isNearBottom) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, streamingMessage, messagesEndRef]);
+  }, [messages, streamingMessage, assistantThought]);
 
   return (
-    <div 
-      ref={containerRef}
-      className="h-full overflow-y-auto scroll-smooth"
-    >
+    <div ref={containerRef} className="h-full overflow-y-auto scroll-smooth">
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Empty State */}
-        {messages.length === 0 && !streamingMessage && !error && !isLoading && (
+
+        {/* EMPTY STATE */}
+        {messages.length === 0 && !streamingMessage && !assistantThought && !error && !isLoading && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
             <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mb-4">
               <MessageSquareIcon className="w-8 h-8 text-primary-600" />
@@ -43,98 +32,69 @@ export default function ConversationMessages({
               Start a conversation
             </h3>
             <p className="text-neutral-600 max-w-md">
-              Messages will appear here as the conversation progresses. 
-              Type your message below to begin.
+              Messages will appear here once you begin.
             </p>
           </div>
         )}
 
-        {/* Loading History State */}
+        {/* LOADING HISTORY */}
         {isLoading && (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-              <p className="text-neutral-600">Loading conversation history...</p>
+              <p className="text-neutral-600">Loading conversation...</p>
             </div>
           </div>
         )}
 
-        {/* Error State */}
+        {/* ERROR */}
         {error && (
-          <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-error-600 mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-error-900 mb-1">
-                Failed to send
-              </p>
-              <p className="text-sm text-error-700">{error}</p>
-              <button className="mt-2 text-sm font-medium text-error-600 hover:text-error-700">
-                Retry
-              </button>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-red-900 mb-1">Error</p>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
         )}
 
-        {/* Message List */}
+        {/* MAIN MESSAGES */}
         <div className="space-y-6">
-          {messages.map((message) => (
+
+          {/* USER + ASSISTANT MESSAGES */}
+          {messages.map((msg) => (
             <ConversationMessage
-              key={message.id}
-              message={message}
-              onSelectSupplier={onSelectSupplier}
+              key={msg.id}
+              message={msg}
+              isStreaming={false}
             />
           ))}
 
-          {/* Streaming Message with Typing Indicator */}
+          {/* YELLOW BUBBLE — ASSISTANT THOUGHT PROCESS */}
+          {assistantThought && (
+            <div className="bg-yellow-100 border border-yellow-300 text-yellow-900 p-4 rounded-xl flex items-start gap-3 shadow-sm">
+              <Lightbulb className="w-5 h-5 mt-1 text-yellow-700" />
+              <div className="whitespace-pre-wrap text-sm">
+                {assistantThought}
+              </div>
+            </div>
+          )}
+
+          {/* NORMAL STREAMING FINAL OUTPUT (NO THOUGHT) */}
           {streamingMessage && (
             <ConversationMessage
               message={{
-                id: 'streaming',
                 from: 'assistant',
                 content: streamingMessage,
-                timestamp: new Date().toISOString(),
-                status: 'streaming'
+                id: 'streaming',
+                status: 'streaming',
               }}
               isStreaming={true}
             />
           )}
 
-          {/* 🔥 FIXED: Hero UI Wave Spinner - Shows between nodes */}
-          {isStreaming && !streamingMessage && (
-            <div className="flex items-start gap-4">
-              {/* Avatar */}
-              <div className="shrink-0">
-                <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center">
-                  <span className="text-lg">🤖</span>
-                </div>
-              </div>
-
-              {/* Typing Indicator with Hero UI Wave Spinner */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-neutral-900">AI Assistant</span>
-                </div>
-                
-                <div className="bg-neutral-100 rounded-2xl rounded-tl-sm px-4 py-3 inline-flex items-center gap-3">
-                  <Spinner 
-                    size="sm"
-                    variant="wave"
-                    color="primary"
-                    classNames={{
-                      wrapper: "w-8 h-8",
-                      circle1: "border-primary-600",
-                      circle2: "border-primary-600"
-                    }}
-                  />
-                  <span className="text-sm text-neutral-600">AI is thinking...</span>
-                </div>
-              </div>
-            </div>
-          )}
+          <div ref={messagesEndRef} />
         </div>
-
-        {/* Scroll anchor */}
-        <div ref={messagesEndRef} className="h-4" />
       </div>
     </div>
   );

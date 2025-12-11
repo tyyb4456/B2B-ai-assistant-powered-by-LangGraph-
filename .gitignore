@@ -5,3 +5,7 @@ B2B-textile-assistant.db-shm
 B2B-textile-assistant.db-wal
 B2B-texttile-assistant.db 
 app.log
+backend/venv
+frontend/venv
+node_modules
+supplier-portal/venv

@@ -1,10 +1,10 @@
 // src/components/conversation/ConversationMessage.jsx
 import { useState } from 'react';
-import { 
-  User, 
-  Bot, 
+import {
+  User,
+  Bot,
   Building2,
-  Copy, 
+  Copy,
   Check,
   ThumbsUp,
   ThumbsDown,
@@ -13,7 +13,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { formatMessageTime, formatRelativeTime } from '../../utils/dateFormatters';
+import { formatRelativeTime } from '../../utils/dateFormatters';
 
 export default function ConversationMessage({ message, isStreaming = false }) {
   const [copied, setCopied] = useState(false);
@@ -22,26 +22,22 @@ export default function ConversationMessage({ message, isStreaming = false }) {
 
   const { from, content, timestamp, status } = message;
 
-  // Determine message alignment and styling
   const isUser = from === 'user';
   const isAssistant = from === 'assistant';
   const isSupplier = from === 'supplier';
 
-  // Handle copy to clipboard
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Handle retry (for failed messages)
   const handleRetry = () => {
     console.log('Retry message:', message.id);
-    // Implement retry logic
   };
 
   return (
-    <div 
+    <div
       className={`flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
       role="article"
       aria-label={`Message from ${from}`}
@@ -62,34 +58,31 @@ export default function ConversationMessage({ message, isStreaming = false }) {
       <div className={`flex-1 min-w-0 ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
         {/* Header */}
         <div className={`flex items-center gap-2 mb-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-          <span className="text-sm font-semibold text-neutral-900">
+          <span className="text-sm font-semibold text-black">
             {isUser ? 'You' : isSupplier ? 'Supplier' : 'AI Assistant'}
           </span>
           {timestamp && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-black">
               {formatDistanceToNow(new Date(timestamp), { addSuffix: true })}
             </span>
           )}
           {isStreaming && (
-            <span className="flex items-center gap-1 text-xs text-neutral-500">
-              <span className="animate-pulse">●</span> typing...
+            <span className="flex items-center gap-1 text-xs text-black">
+              ● typing...
             </span>
           )}
         </div>
 
         {/* Message Bubble */}
-        <div 
-          className={`
-            relative max-w-[85%] rounded-2xl px-4 py-3
-            ${isUser 
-              ? 'bg-primary-600 text-white rounded-tr-sm' 
-              : isSupplier
+        <div className={`
+          relative max-w-[85%] rounded-2xl px-4 py-3
+          ${isUser
+            ? 'bg-primary-600 text-black rounded-tr-sm'
+            : isSupplier
               ? 'bg-warning-50 text-neutral-900 border border-warning-200 rounded-tl-sm'
               : 'bg-neutral-100 text-neutral-900 rounded-tl-sm'
-            }
-            ${isStreaming ? 'animate-pulse' : ''}
-          `}
-        >
+          }
+        `}>
           {/* Content */}
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{content}</p>
@@ -100,23 +93,18 @@ export default function ConversationMessage({ message, isStreaming = false }) {
               </ReactMarkdown>
             </div>
           )}
-
-          {/* Streaming shimmer effect */}
-          {isStreaming && (
-            <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-shimmer rounded-2xl pointer-events-none" />
-          )}
         </div>
 
         {timestamp && (
-        <span 
+          <span
             className="text-xs text-neutral-500"
             title={new Date(timestamp).toLocaleString()}
-        >
+          >
             {formatRelativeTime(timestamp)}
-        </span>
+          </span>
         )}
 
-        {/* Action Buttons (only for assistant messages) */}
+        {/* Action Buttons */}
         {isAssistant && !isStreaming && (
           <div className="flex items-center gap-1 mt-2">
             <button
@@ -125,18 +113,13 @@ export default function ConversationMessage({ message, isStreaming = false }) {
               title="Copy to clipboard"
               aria-label="Copy message"
             >
-              {copied ? (
-                <Check className="w-4 h-4 text-success-600" />
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
+              {copied ? <Check className="w-4 h-4 text-success-600" /> : <Copy className="w-4 h-4" />}
             </button>
 
             <button
               onClick={() => setLiked(!liked)}
-              className={`p-1.5 rounded-lg hover:bg-neutral-100 transition-colors ${
-                liked ? 'text-primary-600' : 'text-neutral-600 hover:text-neutral-900'
-              }`}
+              className={`p-1.5 rounded-lg hover:bg-neutral-100 transition-colors ${liked ? 'text-primary-600' : 'text-neutral-600 hover:text-neutral-900'
+                }`}
               title="Like this response"
               aria-label="Like message"
             >
@@ -145,9 +128,8 @@ export default function ConversationMessage({ message, isStreaming = false }) {
 
             <button
               onClick={() => setDisliked(!disliked)}
-              className={`p-1.5 rounded-lg hover:bg-neutral-100 transition-colors ${
-                disliked ? 'text-error-600' : 'text-neutral-600 hover:text-neutral-900'
-              }`}
+              className={`p-1.5 rounded-lg hover:bg-neutral-100 transition-colors ${disliked ? 'text-error-600' : 'text-neutral-600 hover:text-neutral-900'
+                }`}
               title="Dislike this response"
               aria-label="Dislike message"
             >
